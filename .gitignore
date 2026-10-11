@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Secrets: never commit real values, only .env.example
+.env
+
+# Data and trained models (too big for git; recreated by scripts)
+data/raw/
+data/processed/
+*.pkl
+*.joblib
+
+# Node
+node_modules/
+.next/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
