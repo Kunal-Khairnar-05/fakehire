@@ -1,0 +1,12 @@
+# Files Docker should NOT send into the build (smaller, faster, no secrets or junk)
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+models/
+*.ipynb
+check_data.py
+explore_fakes.py
+train.py
+conftest.py
+requirements.txt

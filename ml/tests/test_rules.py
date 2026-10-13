@@ -54,6 +54,12 @@ def test_scam_scores_high_and_is_hard():
     assert "asks_for_money" in {h.rule for h in result.hits}
 
 
+def test_missing_profile_is_shown_but_not_scored():
+    result = RuleEngine().evaluate(Posting(title="Clerk", description="Apply today."))
+    assert "missing_company_profile" in {h.rule for h in result.hits}
+    assert result.score == 0
+
+
 def test_noisy_or_two_half_flags_make_075():
     # Only the WhatsApp and Gmail rules (0.5 each) -> 1 - 0.5 * 0.5 = 0.75
     engine = RuleEngine([OffPlatformContact(), FreeEmailRecruiter()])

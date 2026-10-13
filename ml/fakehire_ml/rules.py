@@ -19,6 +19,7 @@ class RuleHit:
     message: str  # shown to the user as a red flag
     weight: float
     hard: bool
+    scored: bool = True
 
 
 class Rule(ABC):
@@ -26,13 +27,14 @@ class Rule(ABC):
     message: str
     weight: float
     hard: bool = False
+    scored: bool = True   # False = show the flag to the user, but don't add it to the score
 
     @abstractmethod
     def matches(self, posting: Posting) -> bool: ...
 
     def check(self, posting: Posting) -> RuleHit | None:
         if self.matches(posting):
-            return RuleHit(self.name, self.message, self.weight, self.hard)
+            return RuleHit(self.name, self.message, self.weight, self.hard, self.scored)
         return None
 
 
@@ -115,6 +117,9 @@ class MissingCompanyProfile(Rule):
     name = "missing_company_profile"
     message = "No information about the company."
     weight = 0.35
+    # The ML model already uses "has_company_profile" as a feature. Scoring it here too
+    # counted the same evidence twice and lowered test PR-AUC from 0.86 to 0.82.
+    scored = False
 
     def matches(self, posting: Posting) -> bool:
         return not posting.company_profile
@@ -151,6 +156,7 @@ class RuleEngine:
         # Two 0.5 flags -> 1 - 0.5*0.5 = 0.75. More flags push towards 1, never past it.
         all_innocent = 1.0
         for hit in hits:
-            all_innocent *= 1 - hit.weight
+            if hit.scored:
+                all_innocent *= 1 - hit.weight
 
         return RuleResult(score=round(1 - all_innocent, 3), hits=hits, hard=any(h.hard for h in hits))
