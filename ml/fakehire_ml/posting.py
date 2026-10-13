@@ -26,6 +26,12 @@ class Posting:
         parts = [self.title, self.company_profile, self.description, self.requirements, self.benefits]
         return " ".join(p for p in parts if p).lower()
 
+    @property
+    def is_limited(self) -> bool:
+        """Too little to judge reliably: no company info and a short description.
+        (Step 4b showed the model is much weaker on short inputs: PR-AUC 0.62 vs 0.85.)"""
+        return not self.company_profile and len(self.description.split()) < 50
+
     @classmethod
     def from_row(cls, row) -> "Posting":
         """Build a Posting from one row of the Kaggle CSV."""

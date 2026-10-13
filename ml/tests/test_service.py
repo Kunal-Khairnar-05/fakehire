@@ -16,7 +16,22 @@ def client():
 def test_health_reports_model_version(client):
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["model_version"] == "v1.0"
+    assert r.json()["model_version"] == "v1.1"
+
+
+def test_short_snippet_gets_limited_info_note(client):
+    body = client.post("/predict", json={"description": "Data entry job, on site, 5 days per week."}).json()
+    assert body["limited_info"] is True
+    assert body["note"]
+
+
+def test_full_posting_has_no_note(client):
+    body = client.post("/predict", json={
+        "company_profile": "Acme builds accounting software used by 2,000 Indian small businesses.",
+        "description": "We are hiring a backend intern to work on our Python APIs. " * 6,
+    }).json()
+    assert body["limited_info"] is False
+    assert body["note"] is None
 
 
 def test_scam_message_is_flagged(client):

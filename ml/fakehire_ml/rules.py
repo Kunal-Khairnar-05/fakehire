@@ -99,7 +99,10 @@ class TooGoodToBeTrue(RegexRule):
         r"|no\s+interview"
         r"|guaranteed\s+(income|job|placement|salary|earning)"
         r"|easy\s+money"
-        r"|work\s+from\s+home.{0,40}\b(per|a)\s+(day|week)"
+        # money paid per day/hour ("Rs 800 per day", "₹500/day"), or "daily payout".
+        # NOT just "per week": "5 days per week" is a normal schedule (bug found in manual testing).
+        r"|(rs\.?|₹|inr)\s?[\d,]+\s*(/-\s*)?(per|a|/)\s*(day|hour)"
+        r"|daily\s+(payout|payment|income|earning)"
     )
 
 

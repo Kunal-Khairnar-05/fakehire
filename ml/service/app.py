@@ -20,7 +20,10 @@ from fakehire_ml.rules import RuleEngine
 from fakehire_ml.scoring import combine
 
 # Configuration comes from environment variables (12-factor app), with a local default.
-MODEL_PATH = Path(os.getenv("MODEL_PATH", Path(__file__).resolve().parent.parent / "models" / "model_v1.0.joblib"))
+MODEL_PATH = Path(os.getenv("MODEL_PATH", Path(__file__).resolve().parent.parent / "models" / "model_v1.1.joblib"))
+
+LIMITED_NOTE = ("Only a short snippet was given, so this verdict is less reliable. "
+                "Paste the full posting, including the company description, for a better check.")
 
 state: dict = {}
 
@@ -68,6 +71,8 @@ class VerdictOut(BaseModel):
     rule_score: float
     flags: list[Flag]
     model_version: str
+    limited_info: bool
+    note: str | None = None
     took_ms: float
 
     # Pydantic reserves names starting with "model_"; we really do mean model_version
@@ -97,5 +102,7 @@ def predict(body: PostingIn):
         rule_score=verdict.rule_score,
         flags=[Flag(rule=h.rule, message=h.message) for h in verdict.flags],
         model_version=state["version"],
+        limited_info=posting.is_limited,
+        note=LIMITED_NOTE if posting.is_limited else None,
         took_ms=round((time.perf_counter() - start) * 1000, 2),
     )

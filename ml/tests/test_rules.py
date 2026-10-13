@@ -1,6 +1,7 @@
 """Unit tests for the rule engine. Run from the project root:  python -m pytest ml/tests -v"""
 from fakehire_ml.posting import Posting
-from fakehire_ml.rules import AsksForMoney, FreeEmailRecruiter, OffPlatformContact, RuleEngine
+from fakehire_ml.rules import (AsksForMoney, FreeEmailRecruiter, OffPlatformContact, RuleEngine,
+                               TooGoodToBeTrue)
 
 LEGIT = Posting(
     title="Backend Developer Intern",
@@ -52,6 +53,18 @@ def test_scam_scores_high_and_is_hard():
     assert result.score > 0.9
     assert result.hard is True
     assert "asks_for_money" in {h.rule for h in result.hits}
+
+
+def test_work_schedule_is_not_too_good_to_be_true():
+    # Regression test: real input from manual testing that wrongly fired the rule
+    p = Posting(title="Data Entry Work From Home",
+                description="Data entry job, On Site, 5 days per week. 3 Interview rounds and Salary is 5 LPA")
+    assert not TooGoodToBeTrue().matches(p)
+
+
+def test_daily_pay_is_too_good_to_be_true():
+    assert TooGoodToBeTrue().matches(Posting(description="Work from home and earn Rs 800 per day"))
+    assert TooGoodToBeTrue().matches(Posting(description="Simple typing work, ₹500/day, daily payout"))
 
 
 def test_missing_profile_is_shown_but_not_scored():

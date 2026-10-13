@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Don't write .pyc files; print logs immediately instead of buffering them
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MODEL_PATH=/app/models/model_v1.0.joblib
+    MODEL_PATH=/app/models/model_v1.1.joblib
 
 WORKDIR /app
 
