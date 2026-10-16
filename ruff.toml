@@ -1,0 +1,15 @@
+# ruff = a very fast Python linter. Catches unused imports, undefined names, style issues.
+# Run locally:  ruff check .      Auto-fix what it can:  ruff check . --fix
+line-length = 120
+target-version = "py311"
+
+[lint]
+select = [
+    "E",   # pycodestyle errors (style)
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes: unused imports/variables, undefined names (real bugs)
+    "I",   # import sorting
+]
+
+[lint.isort]
+known-first-party = ["fakehire_ml", "service", "app"]   # our own packages, sorted after libraries

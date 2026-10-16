@@ -27,7 +27,8 @@ def test_check_returns_verdict_and_saves_it(client, auth, db):
 
 def test_same_text_with_different_spacing_and_case_has_same_hash(client, auth, db):
     client.post("/api/v1/check", json=POSTING, headers=auth)
-    messy = {"title": "  DATA   entry ", "description": "PAY a registration fee of Rs 1999\n\nto confirm your seat today."}
+    messy = {"title": "  DATA   entry ",
+             "description": "PAY a registration fee of Rs 1999\n\nto confirm your seat today."}
     client.post("/api/v1/check", json=messy, headers=auth)
     with db.connect() as conn:
         hashes = conn.execute(text("SELECT DISTINCT text_hash FROM checks")).all()

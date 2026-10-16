@@ -1,7 +1,6 @@
 """Unit tests for the rule engine. Run from the project root:  python -m pytest ml/tests -v"""
 from fakehire_ml.posting import Posting
-from fakehire_ml.rules import (AsksForMoney, FreeEmailRecruiter, OffPlatformContact, RuleEngine,
-                               TooGoodToBeTrue)
+from fakehire_ml.rules import AsksForMoney, FreeEmailRecruiter, OffPlatformContact, RuleEngine, TooGoodToBeTrue
 
 LEGIT = Posting(
     title="Backend Developer Intern",

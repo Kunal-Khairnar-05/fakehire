@@ -14,8 +14,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (average_precision_score, confusion_matrix, f1_score,
-                             precision_score, recall_score)
+from sklearn.metrics import average_precision_score, confusion_matrix, f1_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 
 from fakehire_ml.augment import short_eval_copy, shorten
@@ -109,7 +108,8 @@ for set_name, ps in [("full", list(postings[te])), ("short", short_te)]:
 print(f"\nWHAT USERS GET: rules + v1.1, flagged when score >= {SUSPICIOUS_FROM}")
 print(pd.DataFrame(final_rows).to_string(index=False))
 
-tn, fp, fn, tp = confusion_matrix(y[te], (proba(final_model, postings[te]) >= chosen["v1.1 (+ short copies)"]).astype(int)).ravel()
+final_pred = (proba(final_model, postings[te]) >= chosen["v1.1 (+ short copies)"]).astype(int)
+tn, fp, fn, tp = confusion_matrix(y[te], final_pred).ravel()
 print(f"\nv1.1 on full test ({len(te):,} postings): caught {tp}, missed {fn}, false alarms {fp}, correct real {tn}")
 
 # ---------- 6. Save ----------
