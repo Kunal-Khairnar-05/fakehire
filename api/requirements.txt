@@ -1,0 +1,13 @@
+fastapi==0.115.4
+uvicorn==0.32.0
+sqlalchemy==2.0.36          # talks to PostgreSQL through Python classes
+psycopg[binary]==3.2.3      # the PostgreSQL driver SQLAlchemy uses
+pydantic-settings==2.6.1    # reads configuration from .env / environment variables
+email-validator==2.2.0      # lets Pydantic validate email addresses
+bcrypt==4.2.0               # password hashing
+PyJWT==2.9.0                # create and verify JSON Web Tokens
+python-multipart==0.0.17    # needed for the login form (Swagger's Authorize button)
+
+# testing
+pytest==8.3.3
+httpx==0.27.2
