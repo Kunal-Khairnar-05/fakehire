@@ -73,7 +73,7 @@ class AsksForMoney(RegexRule):
 class OffPlatformContact(RegexRule):
     name = "off_platform_contact"
     message = "Moves the conversation to WhatsApp, Telegram or a personal phone number."
-    weight = 0.5
+    weight = 0.6
     # Just mentioning WhatsApp is normal (marketing jobs). The red flag is being told
     # to CONTACT someone there, or a WhatsApp/Telegram number.
     pattern = re.compile(
