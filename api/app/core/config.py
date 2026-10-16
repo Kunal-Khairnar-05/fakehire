@@ -20,5 +20,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60
     test_database_url: str | None = None
 
+    # ml-service (Step 5). Locally the container is published on port 8001.
+    ml_service_url: str = "http://localhost:8001"
+    ml_timeout_seconds: float = 2.0   # never wait forever on another service
+
 
 settings = Settings()
