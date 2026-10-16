@@ -1,0 +1,5 @@
+# Everything for local development and CI: the runtime libraries + test tools.
+# Install with:  pip install -r api/requirements-dev.txt
+-r requirements.txt
+pytest==8.3.3
+fakeredis==2.26.1           # in-memory Redis for tests: no Redis server needed

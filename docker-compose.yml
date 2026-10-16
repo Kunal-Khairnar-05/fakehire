@@ -1,0 +1,81 @@
+# The whole FakeHire system. Start:  docker compose up -d --build
+#                                Stop:   docker compose down
+#
+#   laptop :80 ──► nginx ──► api ×3 ──► postgres
+#                                  ├──► redis
+#                                  └──► ml
+#
+# Values like ${POSTGRES_USER} are read from the .env file next to this one.
+
+services:
+
+  postgres:
+    image: postgres:17
+    env_file: .env                      # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+    volumes:
+      - postgres-data:/var/lib/postgresql/data          # data survives "docker compose down"
+      - ./db/migrations:/migrations:ro                  # :ro = read-only inside the container
+      - ./db/init/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    ports:
+      - "5433:5432"                     # only so YOU (psql, pytest) can reach it from the laptop
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    # A cache must have a memory cap. When full, evict the Least Recently Used keys.
+    command: ["redis-server", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # no "ports": nothing outside Docker needs Redis
+
+  ml:
+    build: ./ml
+    image: fakehire-ml:v1
+    volumes:
+      - ./ml/models:/app/models:ro
+    healthcheck:
+      interval: 5s                      # the check itself comes from ml/Dockerfile; just run it more often
+    # no "ports": only the API talks to it
+
+  api:
+    build: ./api
+    image: fakehire-api:v1
+    env_file: .env                      # JWT_SECRET, etc.
+    environment:
+      # Inside Docker, services find each other by SERVICE NAME, not localhost.
+      # These override the localhost values that .env has for running on your laptop.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      ML_SERVICE_URL: http://ml:8000
+    deploy:
+      replicas: 3                       # three identical copies of the API
+    healthcheck:
+      interval: 5s                      # check comes from api/Dockerfile
+    depends_on:                         # don't start until these report healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+    # no "ports": all traffic must come through Nginx
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"                         # the ONLY public entry point
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

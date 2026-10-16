@@ -32,9 +32,20 @@ async def lifespan(app: FastAPI):
     app.state.redis.close()
 
 
+INSTANCE = socket.gethostname()   # inside Docker: the container id, different for each replica
+
 app = FastAPI(title="FakeHire API", version="1.0", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(checks.router)
+
+
+@app.middleware("http")
+async def add_instance_header(request, call_next):
+    """Middleware runs around EVERY request. This one stamps the response with which
+    API copy handled it, so you can watch the load balancer rotate between replicas."""
+    response = await call_next(request)
+    response.headers["X-Instance"] = INSTANCE
+    return response
 
 
 @app.get("/health", tags=["ops"])
@@ -48,4 +59,4 @@ def health(session: Session = Depends(get_session), redis: Redis = Depends(get_r
         redis_status = "ok"
     except RedisError:
         redis_status = "down"
-    return {"status": "ok", "instance": socket.gethostname(), "redis": redis_status}
+    return {"status": "ok", "instance": INSTANCE, "redis": redis_status}
