@@ -7,7 +7,9 @@ email-validator==2.2.0      # lets Pydantic validate email addresses
 bcrypt==4.2.0               # password hashing
 PyJWT==2.9.0                # create and verify JSON Web Tokens
 python-multipart==0.0.17    # needed for the login form (Swagger's Authorize button)
+httpx==0.27.2               # HTTP client: API -> ml-service (also used by FastAPI's TestClient)
+redis==5.2.0                # cache + rate limiting (Step 9)
 
 # testing
 pytest==8.3.3
-httpx==0.27.2
+fakeredis==2.26.1           # in-memory Redis for tests: no Redis server needed

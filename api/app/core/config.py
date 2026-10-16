@@ -24,5 +24,10 @@ class Settings(BaseSettings):
     ml_service_url: str = "http://localhost:8001"
     ml_timeout_seconds: float = 2.0   # never wait forever on another service
 
+    # Redis (Step 9)
+    redis_url: str = "redis://localhost:6379/0"
+    cache_ttl_seconds: int = 24 * 60 * 60     # cached verdicts expire after 24 h
+    rate_limit_per_minute: int = 30           # checks per user per minute
+
 
 settings = Settings()

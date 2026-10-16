@@ -1,5 +1,6 @@
 """Test setup: run the API against a SEPARATE database (fakehire_test), wiped before each test,
-and a FAKE ml-service, so API tests don't need the ml container running."""
+a FAKE ml-service and an in-memory fake Redis, so API tests need neither container running."""
+import fakeredis
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -8,8 +9,11 @@ from sqlalchemy.orm import sessionmaker
 from app.clients.ml_client import MlServiceUnavailable
 from app.core.config import settings
 from app.db import get_session
-from app.deps import get_ml_client
+from app.deps import get_ml_client, get_rate_limiter, get_redis
 from app.main import app
+from app.services.rate_limiter import RateLimiter
+
+TEST_RATE_LIMIT = 5
 
 SCAM_VERDICT = {
     "score": 87, "label": "Likely scam", "p_model": 0.9, "rule_score": 0.95,
@@ -31,6 +35,10 @@ class FakeMlClient:
         if self.down:
             raise MlServiceUnavailable("simulated outage")
         return self.response
+
+    def current_version(self) -> str:
+        # Like the real client: still knows the last version even while "down"
+        return self.response["model_version"]
 
     def close(self):
         pass
@@ -57,16 +65,30 @@ def ml():
 
 
 @pytest.fixture
-def client(db, ml):
+def rate_limit():
+    """Checks allowed per minute in tests (the real default is 30)."""
+    return TEST_RATE_LIMIT
+
+
+@pytest.fixture
+def redis():
+    """A fresh, empty in-memory Redis for every test."""
+    return fakeredis.FakeRedis(decode_responses=True)
+
+
+@pytest.fixture
+def client(db, ml, redis):
     TestSession = sessionmaker(bind=db, expire_on_commit=False)
 
     def test_session():
         with TestSession() as session:
             yield session
 
-    # Dependency injection pays off: swap the real database and ml-service for test ones
+    # Dependency injection pays off: swap the real database, ml-service and Redis for test ones
     app.dependency_overrides[get_session] = test_session
     app.dependency_overrides[get_ml_client] = lambda: ml
+    app.dependency_overrides[get_redis] = lambda: redis
+    app.dependency_overrides[get_rate_limiter] = lambda: RateLimiter(redis, TEST_RATE_LIMIT)
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

@@ -1,7 +1,10 @@
 """Business logic for checking a posting.
 
-Step 8: score with ml-service, then save to history.
-Step 9 will add: rate limit -> cache lookup -> (ml-service only on a miss) -> cache store.
+    hash the text -> look in the cache -> HIT:  use the cached verdict (no ml-service call)
+                                       -> MISS: ask ml-service, store the answer in the cache
+                  -> save to history either way
+
+(The rate limit runs before this, as a route dependency.)
 """
 import hashlib
 import re
@@ -14,6 +17,7 @@ from ..clients.ml_client import MlClient
 from ..models import Check
 from ..repositories.check_repo import CheckRepository
 from ..schemas import PostingIn
+from .cache import VerdictCache
 
 SNIPPET_CHARS = 200
 _WHITESPACE = re.compile(r"\s+")
@@ -21,15 +25,14 @@ _WHITESPACE = re.compile(r"\s+")
 
 def normalize(posting: PostingIn) -> str:
     """The same message pasted with different spacing or capitals should count as the
-    same message, so the hash (and in Step 9 the cache) treats them as identical."""
+    same message, so the hash (and the cache key) treats them as identical."""
     parts = [posting.title, posting.company_profile, posting.description,
              posting.requirements, posting.benefits, posting.salary_range]
     return _WHITESPACE.sub(" ", " ".join(parts)).strip().lower()
 
 
 def text_hash(posting: PostingIn) -> str:
-    """SHA-256 = a 64-character fingerprint. Same text -> same hash, always.
-    We store this instead of comparing whole postings."""
+    """SHA-256 = a 64-character fingerprint. Same text -> same hash, always."""
     return hashlib.sha256(normalize(posting).encode()).hexdigest()
 
 
@@ -41,26 +44,35 @@ class CheckResult:
 
 
 class CheckService:
-    def __init__(self, session: Session, ml: MlClient):
+    def __init__(self, session: Session, ml: MlClient, cache: VerdictCache):
         self.session = session
         self.ml = ml
+        self.cache = cache
         self.checks = CheckRepository(session)
 
     def check(self, user_id: int, posting: PostingIn) -> CheckResult:
-        # 1. Score it. Raises MlServiceUnavailable if ml-service is down: then nothing is saved.
-        verdict = self.ml.predict(posting.model_dump())
+        fingerprint = text_hash(posting)
 
-        # 2. Save to the user's history
+        # 1. Cache lookup (key includes the model version ml-service is running)
+        verdict = self.cache.get(self.ml.current_version(), fingerprint)
+        cache_hit = verdict is not None
+
+        # 2. Miss: score it, then remember the answer for the next person
+        if not cache_hit:
+            verdict = self.ml.predict(posting.model_dump())   # raises MlServiceUnavailable if down
+            self.cache.set(fingerprint, verdict)
+
+        # 3. Save to the user's history either way
         check = self.checks.add(
             user_id=user_id,
-            text_hash=text_hash(posting),
+            text_hash=fingerprint,
             title=posting.title or None,
             snippet=posting.description[:SNIPPET_CHARS],
             score=verdict["score"],
             verdict=verdict["label"],
             flags=verdict["flags"],
             model_version=verdict["model_version"],
-            cache_hit=False,
+            cache_hit=cache_hit,
         )
         self.session.commit()
         return CheckResult(check=check, limited_info=verdict["limited_info"], note=verdict["note"])

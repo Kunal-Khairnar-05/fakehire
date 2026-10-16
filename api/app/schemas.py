@@ -64,6 +64,7 @@ class CheckOut(BaseModel):
     model_version: str
     cache_hit: bool
     created_at: datetime
+    took_ms: float           # time spent inside the API for this request
 
 
 class CheckSummary(BaseModel):
