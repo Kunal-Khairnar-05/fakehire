@@ -10,7 +10,7 @@ export default function ReportScam({ checkId, posting, onError }: Props) {
   // Remember which checks were reported in this session, so the form doesn't come back
   const [reported, setReported] = useSessionState<number[]>("reported-checks", []);
   const [open, setOpen] = useState(false);
-  const [company, setCompany] = useState("");
+  const [company, setCompany] = useState(posting?.company_name ?? "");   // pre-filled from the check
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function ReportScam({ checkId, posting, onError }: Props) {
     return (
       <div className="report-cta">
         <span className="muted small">Know this is a scam? Reporting it helps the next person.</span>
-        <button className="btn btn-tinted btn-small" onClick={() => setOpen(true)}>Report as scam</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => setOpen(true)}>Report as scam</button>
       </div>
     );
   }
@@ -69,10 +69,10 @@ export default function ReportScam({ checkId, posting, onError }: Props) {
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="actions">
-        <button type="button" className="btn btn-gray btn-small" onClick={() => setOpen(false)} disabled={busy}>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
         </button>
-        <button className="btn btn-filled btn-small" disabled={busy || company.trim().length < 2}>
+        <button className="btn btn-primary btn-sm" disabled={busy || company.trim().length < 2}>
           {busy ? "Sending…" : "Send report"}
         </button>
       </div>

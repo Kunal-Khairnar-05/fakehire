@@ -12,10 +12,11 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .clients.ml_client import MlClient
+from .clients.search_client import SearchClient
 from .core.config import settings
 from .db import get_session
 from .deps import get_redis
-from .routes import auth, checks, companies, reports
+from .routes import auth, checks, companies, reports, web
 
 
 @asynccontextmanager
@@ -26,10 +27,12 @@ async def lifespan(app: FastAPI):
     # not add seconds to every request.
     app.state.redis = Redis.from_url(settings.redis_url, decode_responses=True,
                                      socket_timeout=0.25, socket_connect_timeout=0.25)
+    app.state.search_client = SearchClient(settings.tavily_api_key, settings.web_timeout_seconds)
     yield
     # Shutdown: close open connections cleanly
     app.state.ml_client.close()
     app.state.redis.close()
+    app.state.search_client.close()
 
 
 INSTANCE = socket.gethostname()   # inside Docker: the container id, different for each replica
@@ -39,6 +42,7 @@ app.include_router(auth.router)
 app.include_router(checks.router)
 app.include_router(reports.router)
 app.include_router(companies.router)
+app.include_router(web.router)
 
 
 @app.middleware("http")

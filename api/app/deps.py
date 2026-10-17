@@ -11,6 +11,7 @@ from redis import Redis
 from sqlalchemy.orm import Session
 
 from .clients.ml_client import MlClient
+from .clients.search_client import SearchClient
 from .core.config import settings
 from .core.security import decode_access_token
 from .db import get_session
@@ -23,6 +24,7 @@ from .services.company_service import CompanyService
 from .services.rate_limiter import RateLimiter
 from .services.report_service import ReportService
 from .services.trending import TrendingBoard
+from .services.web_check import WebCheckService
 
 # Reads "Authorization: Bearer <token>" from the request. tokenUrl tells Swagger where to log in.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -107,3 +109,13 @@ def require_role(*allowed: str):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "You don't have permission to do this")
         return claims
     return check_role
+
+
+def get_search_client(request: Request) -> SearchClient:
+    """The shared Tavily client created at startup. Tests replace it with a fake."""
+    return request.app.state.search_client
+
+
+def get_web_check_service(search: SearchClient = Depends(get_search_client),
+                          redis: Redis = Depends(get_redis)) -> WebCheckService:
+    return WebCheckService(search, redis, settings.web_cache_ttl_seconds)

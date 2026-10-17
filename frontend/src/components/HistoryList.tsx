@@ -6,8 +6,11 @@ import { bandClass } from "./VerdictCard";
 
 type Props = { onError: (err: unknown) => string };
 
+const when = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
 export default function HistoryList({ onError }: Props) {
-  // The last list shown is kept, so reopening this tab shows it instantly while fresh data loads
+  // The last list shown is kept, so reopening this page shows it instantly while fresh data loads
   const [items, setItems] = useSessionState<CheckSummary[]>("history-items", []);
   const [nextBefore, setNextBefore] = useSessionState<string | null>("history-next", null);
   const [loading, setLoading] = useState(true);
@@ -27,43 +30,41 @@ export default function HistoryList({ onError }: Props) {
     }
   }
 
-  // Refresh the first page every time the tab opens (picks up checks you just made)
+  // Refresh the first page every time the page opens (picks up checks you just made)
   useEffect(() => {
     loadPage(null);
   }, []);
 
   if (!loading && !error && items.length === 0) {
     return (
-      <div className="glass panel empty">
+      <section className="card empty">
         <h2>No checks yet</h2>
         <p className="muted">Postings you check appear here, newest first.</p>
-      </div>
+      </section>
     );
   }
 
   return (
-    <section className="glass panel">
-      <div className="row-between">
-        <h2>My checks</h2>
-        {loading && <span className="muted small">Refreshing…</span>}
+    <section className="card">
+      <div className="card-head">
+        <h2>Checks</h2>
+        <span className="muted small">{loading ? "Refreshing…" : `${items.length} shown`}</span>
       </div>
       {error && <p className="error" role="alert">{error}</p>}
-      <ul className="history">
+      <ul className="list with-time">
         {items.map((c) => (
           <li key={c.id}>
             <span className={`score-chip ${bandClass(c.verdict)}`}>{c.score}</span>
-            <div className="history-text">
+            <div className="list-text">
               <strong>{c.title || "Untitled posting"}</strong>
               <span className="muted">{c.snippet}</span>
             </div>
-            <time className="muted" dateTime={c.created_at}>
-              {new Date(c.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-            </time>
+            <time dateTime={c.created_at}>{when(c.created_at)}</time>
           </li>
         ))}
       </ul>
       {nextBefore && (
-        <button className="btn btn-gray btn-block" disabled={loading} onClick={() => loadPage(nextBefore)}>
+        <button className="btn btn-secondary btn-block list-more" disabled={loading} onClick={() => loadPage(nextBefore)}>
           {loading ? "Loading…" : "Load older checks"}
         </button>
       )}

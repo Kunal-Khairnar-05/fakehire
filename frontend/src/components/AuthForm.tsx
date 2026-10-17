@@ -35,16 +35,16 @@ export default function AuthForm({ onLoggedIn }: Props) {
 
   return (
     <div className="auth-page">
-      <figure className="hero glass">
+      <figure className="card hero">
         <img src={banner} alt="FakeHire: spot fake job postings, save your time" />
       </figure>
 
-      <section className="auth glass">
+      <section className="card auth">
         <div>
-          <h1>{mode === "login" ? "Welcome back" : "Create your account"}</h1>
+          <h1>{mode === "login" ? "Sign in to FakeHire" : "Create your account"}</h1>
           <p className="muted">
             {mode === "login"
-              ? "Sign in to check a posting before you reply to a recruiter."
+              ? "Check a posting before you reply to a recruiter."
               : "Free. Your checks stay private to your account."}
           </p>
         </div>
@@ -62,14 +62,14 @@ export default function AuthForm({ onLoggedIn }: Props) {
 
           {error && <p className="error" role="alert">{error}</p>}
 
-          <button className="btn btn-filled btn-block btn-large" disabled={busy}>
+          <button className="btn btn-primary btn-block btn-lg" disabled={busy}>
             {busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
           </button>
         </form>
 
         <p className="switch">
           {mode === "login" ? "New to FakeHire?" : "Already have an account?"}
-          <button className="btn btn-plain" onClick={switchMode}>
+          <button className="btn btn-ghost" onClick={switchMode}>
             {mode === "login" ? "Create an account" : "Sign in"}
           </button>
         </p>

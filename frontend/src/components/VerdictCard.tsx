@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { AlertTriangle } from "lucide-react";
 
 import type { PostingInput, Verdict } from "../api";
 import ReportScam from "./ReportScam";
@@ -20,38 +20,50 @@ export default function VerdictCard({ v, posting, onError }: Props) {
   const band = bandClass(v.verdict);
 
   return (
-    // key={v.id}: a new result remounts the card, so the dial animates from 0 again
-    <section key={v.id} className={`glass panel verdict ${band}`} aria-live="polite">
+    <section className={`card verdict ${band}`} aria-live="polite">
       <div className="verdict-head">
-        {/* Neumorphic dial: the ring fills to the score (conic-gradient driven by --p) */}
-        <div className="dial" style={{ "--p": v.score } as CSSProperties}
-             role="img" aria-label={`Risk score ${v.score} out of 100`}>
-          <div className="dial-inner">
-            <span className="dial-num">{v.score}</span>
-            <span className="dial-max">of 100</span>
+        <div>
+          <h3>Risk score</h3>
+          <div className="score" aria-label={`Risk score ${v.score} out of 100`}>
+            <span className="score-num">{v.score}</span>
+            <span className="score-max">/ 100</span>
           </div>
         </div>
-        <div className="verdict-text">
-          <span className={`pill ${band}`}>{v.verdict}</span>
-          <p>{ADVICE[v.verdict]}</p>
-        </div>
+        <span className={`pill ${band}`}>{v.verdict}</span>
       </div>
 
+      {/* Bands marked at 40 and 70 */}
+      <div className="meter" role="img" aria-label={`Score ${v.score}: ${v.verdict}`}>
+        <div className="meter-fill" style={{ width: `${v.score}%` }} />
+        <span className="tick" style={{ left: "40%" }} />
+        <span className="tick" style={{ left: "70%" }} />
+      </div>
+      <div className="meter-labels"><span>Safe</span><span>Suspicious</span><span>Likely scam</span></div>
+
+      <p className="advice">{ADVICE[v.verdict]}</p>
       {v.note && <p className="note">{v.note}</p>}
 
-      <h3>Red flags found</h3>
+      <h3 className="section-title">Red flags · {v.flags.length}</h3>
       {v.flags.length ? (
         <ul className="flags">
-          {v.flags.map((f) => <li key={f.rule}>{f.message}</li>)}
+          {v.flags.map((f) => (
+            <li key={f.rule}>
+              <AlertTriangle size={14} aria-hidden="true" />
+              <span>{f.message}</span>
+            </li>
+          ))}
         </ul>
       ) : (
-        <p className="muted">None of our rules matched. The score comes from the model alone.</p>
+        <p className="muted small" style={{ marginTop: 8 }}>
+          None of the rules matched. The score comes from the model alone.
+        </p>
       )}
 
       <div className="meta">
-        <span className="tag">Model {v.model_version}</span>
-        <span className="tag">{v.cache_hit ? "Cached answer" : "Freshly scored"}</span>
+        <span className="tag">model {v.model_version}</span>
+        <span className="tag">{v.cache_hit ? "cache hit" : "scored"}</span>
         <span className="tag">{v.took_ms} ms</span>
+        <span className="tag">check #{v.id}</span>
       </div>
 
       <ReportScam checkId={v.id} posting={posting} onError={onError} />

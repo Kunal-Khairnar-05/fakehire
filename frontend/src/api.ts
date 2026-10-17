@@ -51,6 +51,25 @@ export type QueueItem = Report & {
 
 export type Queue = { items: QueueItem[]; next_after: string | null };
 
+export type Evidence = {
+  kind: "company" | "phone" | "email";
+  title: string;
+  url: string;
+  domain: string;
+  snippet: string;
+  complaint: boolean;
+  official: boolean;
+};
+
+export type WebCheck = {
+  status: "impersonation_risk" | "complaints_found" | "no_reports_found" | "nothing_to_search" | "unavailable";
+  summary: string;
+  identifiers: { company: string | null; phones: string[]; emails: string[] };
+  evidence: Evidence[];
+  official_site: Evidence | null;
+  searches: number;
+};
+
 export type Company = { id: number; name: string; verified_reports: number; last_reported_at: string | null };
 
 // source "live" = this week's Redis leaderboard; "fallback" = Redis down, all-time counts
@@ -61,6 +80,8 @@ export type PostingInput = {
   description: string;
   company_profile: string;
   salary_range: string;
+  // Not part of the text the model scores; used for the web check and to pre-fill reports
+  company_name?: string;
 };
 
 export class ApiError extends Error {
@@ -173,6 +194,9 @@ export const api = {
 
   review: (id: number, status: "verified" | "rejected") =>
     request<Report>(`/api/v1/reports/${id}`, json({ status }, "PATCH")),
+
+  webCheck: (posting: PostingInput) =>
+    request<WebCheck>("/api/v1/web-check", json({ posting, company_name: posting.company_name || null })),
 
   // Public: no login needed
   trending: () => request<Trending>("/api/v1/trending?limit=5"),

@@ -1,9 +1,12 @@
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { api, type Company, type Trending } from "../api";
 
-// "Known scam companies": search box + this week's trending list.
-// Both endpoints are public and read-only, so errors just show an empty state.
+const reportsLabel = (n: number) => `${n} ${n === 1 ? "report" : "reports"}`;
+
+// Search box + this week's trending list. Both endpoints are public and read-only,
+// so errors just show an empty state.
 export default function ScamCompanies() {
   const [trending, setTrending] = useState<Trending | null>(null);
   const [query, setQuery] = useState("");
@@ -14,8 +17,7 @@ export default function ScamCompanies() {
     api.trending().then(setTrending).catch(() => setTrending({ items: [], source: "fallback" }));
   }, []);
 
-  // Search as you type, but wait until typing pauses for 250 ms (DEBOUNCE): typing
-  // "global" sends 1 request instead of 6.
+  // Search as you type, but only once typing pauses for 250 ms (DEBOUNCE)
   useEffect(() => {
     const term = query.trim();
     if (term.length < 2) {
@@ -37,56 +39,61 @@ export default function ScamCompanies() {
     };
   }, [query]);
 
+  const searchingNow = query.trim().length >= 2;
+
   return (
-    <section className="glass panel companies">
-      <h2>Known scam companies</h2>
-      <p className="muted small">Confirmed by moderators from user reports.</p>
-
-      <input type="search" aria-label="Search a company name" placeholder="Search a company name…"
-             value={query} onChange={(e) => setQuery(e.target.value)} maxLength={100} />
-
-      {query.trim().length >= 2 ? (
-        <>
-          <h3>{searching || results === null ? "Searching…" : `Results for “${query.trim()}”`}</h3>
-          {results === null ? null : results.length ? (
-            <ol className="company-list">
+    <div className="stack-lg">
+      <section className="card companies">
+        <div className="card-head"><h2>Search</h2></div>
+        <div style={{ position: "relative" }}>
+          <Search size={15} className="muted" style={{ position: "absolute", left: 12, top: 11 }} aria-hidden="true" />
+          <input type="search" aria-label="Search a company name" placeholder="Search a company name…"
+                 value={query} onChange={(e) => setQuery(e.target.value)} maxLength={100}
+                 style={{ paddingLeft: 34 }} />
+        </div>
+        {searchingNow && (
+          searching || results === null ? (
+            <p className="muted small">Searching…</p>
+          ) : results.length ? (
+            <ul className="list two-col">
               {results.map((c) => (
                 <li key={c.id}>
                   <span className="company-name">{c.name}</span>
-                  <span className="pill bad">{c.verified_reports} {c.verified_reports === 1 ? "report" : "reports"}</span>
+                  <span className="pill bad">{reportsLabel(c.verified_reports)}</span>
                 </li>
               ))}
-            </ol>
+            </ul>
           ) : (
-            !searching && (
-              <p className="muted small">
-                No confirmed reports for this name. That isn't proof it's safe; check the posting itself.
-              </p>
-            )
-          )}
-        </>
-      ) : (
-        <>
-          <h3>{trending?.source === "fallback" ? "Most reported" : "Trending this week"}</h3>
-          {trending === null ? (
-            <p className="muted small">Loading…</p>
-          ) : trending.items.length ? (
-            <ol className="company-list ranked">
-              {trending.items.map((c, i) => (
-                <li key={c.id}>
-                  <span className="rank">{i + 1}</span>
-                  <span className="company-name">{c.name}</span>
-                  <span className="pill bad">
-                    {c.this_week !== null ? `${c.this_week} this week` : `${c.verified_reports} total`}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="muted small">No confirmed scams this week yet.</p>
-          )}
-        </>
-      )}
-    </section>
+            <p className="muted small">
+              No confirmed reports for “{query.trim()}”. That isn't proof it's safe; check the posting itself.
+            </p>
+          )
+        )}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2>{trending?.source === "fallback" ? "Most reported" : "Trending this week"}</h2>
+          <span className="tag">{trending?.source === "fallback" ? "database" : "live"}</span>
+        </div>
+        {trending === null ? (
+          <p className="muted small" style={{ marginTop: 12 }}>Loading…</p>
+        ) : trending.items.length ? (
+          <ul className="list">
+            {trending.items.map((c, i) => (
+              <li key={c.id}>
+                <span className="rank">{i + 1}</span>
+                <span className="company-name">{c.name}</span>
+                <span className="pill bad">
+                  {c.this_week !== null ? `${c.this_week} this week` : reportsLabel(c.verified_reports)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted small" style={{ marginTop: 12 }}>No confirmed scams this week yet.</p>
+        )}
+      </section>
+    </div>
   );
 }
