@@ -1,0 +1,55 @@
+{
+  "rows": {
+    "users": 50000,
+    "checks": 1005000
+  },
+  "runs_per_query": 200,
+  "tests": [
+    {
+      "title": "History page 1 (1M rows)",
+      "no index": {
+        "median_ms": 33.007,
+        "p95_ms": 39.14,
+        "plan": "Limit > Sort > Seq Scan"
+      },
+      "composite index": {
+        "median_ms": 0.06,
+        "p95_ms": 0.084,
+        "plan": "Limit > Index Scan (checks_user_recent_idx)"
+      },
+      "speedup": 550.1
+    },
+    {
+      "title": "History page 100 (power user)",
+      "OFFSET 1980": {
+        "median_ms": 0.336,
+        "p95_ms": 0.44,
+        "plan": "Limit > Index Scan (checks_user_recent_idx)"
+      },
+      "keyset (created_at <)": {
+        "median_ms": 0.019,
+        "p95_ms": 0.029,
+        "plan": "Limit > Index Scan (checks_user_recent_idx)"
+      },
+      "speedup": 17.7
+    },
+    {
+      "title": "Login by email (50k users)",
+      "no index": {
+        "median_ms": 2.635,
+        "p95_ms": 3.286,
+        "plan": "Seq Scan"
+      },
+      "UNIQUE index": {
+        "median_ms": 0.025,
+        "p95_ms": 0.035,
+        "plan": "Index Scan (users_email_key)"
+      },
+      "speedup": 105.4
+    }
+  ],
+  "sizes": {
+    "checks_table": "160 MB",
+    "composite_index": "30 MB"
+  }
+}

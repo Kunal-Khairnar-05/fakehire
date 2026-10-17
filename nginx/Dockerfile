@@ -16,4 +16,5 @@ RUN npm run build               # type-check + bundle into /app/dist
 FROM nginx:1.27-alpine
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/api_proxy.conf /etc/nginx/api_proxy.conf
+COPY nginx/limits.conf /etc/nginx/limits.conf
 COPY --from=build /app/dist /usr/share/nginx/html

@@ -1,0 +1,16 @@
+# OVERRIDE FILE, used only while load testing. Compose merges it on top of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d
+#
+# A load test is one machine (one IP, a few accounts) sending hundreds of requests per
+# second. Both rate limiters would rightly block that, so this file relaxes them.
+# Go back to normal with:  docker compose up -d   (without the -f flags)
+
+services:
+  api:
+    environment:
+      RATE_LIMIT_PER_MINUTE: "1000000"
+
+  nginx:
+    volumes:
+      - ./benchmarks/nginx-no-limit.conf:/etc/nginx/limits.conf:ro
