@@ -1,0 +1,7 @@
+# Not needed in the deployed function
+tests/
+conftest.py
+requirements-dev.txt
+Dockerfile
+.dockerignore
+__pycache__/

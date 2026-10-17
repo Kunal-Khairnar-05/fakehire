@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/Kunal-Khairnar-05/fakehire/actions/workflows/ci.yml/badge.svg)](https://github.com/Kunal-Khairnar-05/fakehire/actions/workflows/ci.yml)
 
-Detects fake job and internship postings. Paste a posting or recruiter message and get a 0–100 risk score, a verdict, and the red flags found.
+Detects fake job and internship postings. Paste a posting or recruiter message and get a 0–100 risk score, the red flags found, and what the web says about whoever posted it.
+
+**Live:** https://fakehire.vercel.app · API docs: https://fakehire.vercel.app/docs
 
 ## Architecture
 
@@ -26,7 +28,22 @@ browser :80 ──► Nginx ──► /     React app (static, built into the Ng
 
 Full benchmark write-up: [`benchmarks/RESULTS.md`](benchmarks/RESULTS.md).
 
-## Run it
+## Production
+
+| Piece | Runs on |
+|---|---|
+| Frontend (React) | Vercel, rewrites `/api/*` to the API (same origin, no CORS) |
+| API (FastAPI) | Vercel serverless function, region `sin1` |
+| ml-service | Vercel serverless function; model downloaded at build time from a GitHub Release (`MODEL_VERSION`) and protected by an internal token |
+| PostgreSQL | Neon (migrations: `python db/migrate.py`) |
+| Redis | Upstash (TLS) |
+| Web search | Tavily |
+
+Measured in production: a repeated check is answered from the Redis cache in **11 ms** of server time, versus **762 ms** when the ML service has to score it.
+
+Locally, `docker compose up` runs the same code with Nginx load-balancing three API replicas.
+
+## Run it locally
 
 ```bash
 cp .env.example .env        # then set your own passwords and JWT secret
@@ -49,4 +66,4 @@ Open http://localhost (the app) or http://localhost/docs (API docs).
 
 ## Status
 
-Phase 1 (MVP) complete. Next: scam reports with moderation and a retraining loop (Phase 2), cloud deployment (Phase 3).
+Deployed. Phase 1 (MVP), Phase 2 (reports, moderation, trending, retraining loop, web check) and Phase 3 (deployment) complete.

@@ -5,6 +5,7 @@ service means it can be scaled, restarted or replaced without touching the API.
 
 Run locally (from the ml/ folder):  uvicorn service.app:app --reload --port 8001
 """
+import hmac
 import json
 import logging
 import os
@@ -14,7 +15,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import joblib
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from fakehire_ml.model import to_frame
@@ -27,6 +28,9 @@ MODELS_DIR = Path(os.getenv("MODELS_DIR", Path(__file__).resolve().parent.parent
 POINTER = MODELS_DIR / "current.json"     # written by retrain.py when a new model passes the gate
 MODEL_PATH = Path(os.getenv("MODEL_PATH", MODELS_DIR / "model_v1.1.joblib"))   # used if there's no pointer
 RELOAD_CHECK_SECONDS = 10
+# In Docker, ml-service is only reachable inside the private network. When deployed publicly
+# (Vercel), INTERNAL_TOKEN is set and only callers presenting it (our API) may use /predict.
+INTERNAL_TOKEN = os.getenv("INTERNAL_TOKEN")
 
 log = logging.getLogger("uvicorn.error")
 
@@ -126,7 +130,16 @@ def health():
     return {"status": "ok", "model_version": state["model"][1]}
 
 
-@app.post("/predict", response_model=VerdictOut)
+def require_internal_token(x_internal_token: str | None = Header(None)) -> None:
+    if not INTERNAL_TOKEN:
+        return   # private network (Docker Compose): no token needed
+    # compare_digest takes the same time whether the first or last character differs,
+    # so the token can't be guessed character by character from response timings
+    if not x_internal_token or not hmac.compare_digest(x_internal_token, INTERNAL_TOKEN):
+        raise HTTPException(401, "Missing or wrong X-Internal-Token")
+
+
+@app.post("/predict", response_model=VerdictOut, dependencies=[Depends(require_internal_token)])
 def predict(body: PostingIn):
     start = time.perf_counter()
     reload_if_changed()

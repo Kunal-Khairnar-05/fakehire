@@ -15,9 +15,10 @@ class MlServiceUnavailable(Exception):
 
 
 class MlClient:
-    def __init__(self, base_url: str, timeout: float):
+    def __init__(self, base_url: str, timeout: float, internal_token: str | None = None):
         # timeout: if ml-service hangs, fail after N seconds instead of hanging the user too
-        self._http = httpx.Client(base_url=base_url, timeout=timeout)
+        headers = {"X-Internal-Token": internal_token} if internal_token else {}
+        self._http = httpx.Client(base_url=base_url, timeout=timeout, headers=headers)
         self._version: str | None = None
         self._version_checked_at = 0.0
 

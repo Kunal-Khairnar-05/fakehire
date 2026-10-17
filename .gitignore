@@ -31,3 +31,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Vercel CLI project links (machine-specific)
+.vercel/

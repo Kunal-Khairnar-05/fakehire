@@ -22,7 +22,7 @@ from .routes import auth, checks, companies, reports, web
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: shared clients for the whole process
-    app.state.ml_client = MlClient(settings.ml_service_url, settings.ml_timeout_seconds)
+    app.state.ml_client = MlClient(settings.ml_service_url, settings.ml_timeout_seconds, settings.ml_internal_token)
     # Short timeouts: if Redis is down we want to give up quickly and fail open,
     # not add seconds to every request.
     app.state.redis = Redis.from_url(settings.redis_url, decode_responses=True,
