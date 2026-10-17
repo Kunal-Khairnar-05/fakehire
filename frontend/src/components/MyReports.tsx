@@ -10,27 +10,36 @@ const STATUS: Record<ReportStatus, { label: string; band: string }> = {
   rejected: { label: "Not confirmed", band: "ok" },
 };
 
-// Your reports and what moderators decided. Hidden entirely until you've reported something.
 export default function MyReports({ onError }: Props) {
-  const [reports, setReports] = useState<Report[]>([]);
+  const [reports, setReports] = useState<Report[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.myReports().then(setReports).catch((err) => setError(onError(err)));
   }, [onError]);
 
-  if (!error && reports.length === 0) return null;
+  if (reports !== null && reports.length === 0 && !error) {
+    return (
+      <section className="card empty">
+        <h2>No reports yet</h2>
+        <p className="muted">After checking a posting, use "Report as scam" on the result. You'll follow its review here.</p>
+      </section>
+    );
+  }
 
   return (
-    <section className="glass panel">
-      <h2>My reports</h2>
+    <section className="card">
+      <div className="card-head">
+        <h2>Reports</h2>
+        <span className="muted small">{reports === null ? "Loading…" : `${reports.length} total`}</span>
+      </div>
       {error && <p className="error" role="alert">{error}</p>}
-      <ul className="report-list">
-        {reports.map((r) => (
+      <ul className="list two-col">
+        {(reports ?? []).map((r) => (
           <li key={r.id}>
-            <div className="history-text">
+            <div className="list-text">
               <strong>{r.company_name}</strong>
-              {r.reason && <span className="muted">{r.reason}</span>}
+              <span className="muted">{r.reason || "No reason given"}</span>
             </div>
             <span className={`pill ${STATUS[r.status].band}`}>{STATUS[r.status].label}</span>
           </li>

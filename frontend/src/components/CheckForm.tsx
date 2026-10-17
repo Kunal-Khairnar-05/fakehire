@@ -2,16 +2,17 @@ import { type FormEvent, useState } from "react";
 
 import { api, type PostingInput, type Verdict } from "../api";
 import { useSessionState } from "../useSessionState";
-import ScamCompanies from "./ScamCompanies";
 import VerdictCard from "./VerdictCard";
+import WebEvidence from "./WebEvidence";
 
 type Props = { onError: (err: unknown) => string };
 
-const EMPTY: PostingInput = { title: "", description: "", company_profile: "", salary_range: "" };
+const EMPTY: PostingInput = { title: "", company_name: "", description: "", company_profile: "", salary_range: "" };
 
 // Example inputs so a first-time visitor sees what the tool does in one click
 const SAMPLE_SCAM: PostingInput = {
   title: "Data Entry Work From Home",
+  company_name: "Global Typing Solutions",
   description:
     "No interview needed! Earn Rs 30000 per month from home. Pay a registration fee of Rs 1999 to " +
     "confirm your seat. Limited seats, immediate joining. Message HR on WhatsApp 9876543210.",
@@ -21,6 +22,7 @@ const SAMPLE_SCAM: PostingInput = {
 
 const SAMPLE_REAL: PostingInput = {
   title: "Backend Developer Intern",
+  company_name: "Ledgerly",
   description:
     "We are looking for a backend intern to join our payments team for 6 months. You will build and test " +
     "REST APIs in Python, write SQL against PostgreSQL, and take part in code reviews. Selection process: " +
@@ -66,14 +68,14 @@ export default function CheckForm({ onError }: Props) {
 
   return (
     <div className="check-layout">
-      <form className="glass panel stack" onSubmit={submit}>
-        <div className="row-between">
-          <h2>Paste the posting</h2>
+      <form className="card stack" onSubmit={submit}>
+        <div className="card-head">
+          <h2>Posting</h2>
           <div className="samples">
-            <button type="button" className="btn btn-tinted btn-small" onClick={() => load(SAMPLE_SCAM)}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => load(SAMPLE_SCAM)}>
               Sample scam
             </button>
-            <button type="button" className="btn btn-tinted btn-small" onClick={() => load(SAMPLE_REAL)}>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => load(SAMPLE_REAL)}>
               Sample real
             </button>
           </div>
@@ -83,51 +85,74 @@ export default function CheckForm({ onError }: Props) {
         <input id="title" maxLength={300} value={form.title} onChange={set("title")}
                placeholder="e.g. Data Entry Operator" />
 
+        <label htmlFor="company-name">
+          Company name <span className="optional">Optional · used for the web check</span>
+        </label>
+        <input id="company-name" maxLength={200} value={form.company_name ?? ""} onChange={set("company_name")}
+               placeholder="As written in the posting" />
+
         <label htmlFor="description">Description or recruiter message</label>
-        <textarea id="description" required minLength={20} maxLength={10000} rows={7}
+        <textarea id="description" required minLength={20} maxLength={10000} rows={8}
                   value={form.description} onChange={set("description")}
                   placeholder="Paste the full posting, WhatsApp message or email here" />
-        <small className="muted counter">{form.description.length.toLocaleString()} / 10,000</small>
+        <small className="counter">{form.description.length.toLocaleString()} / 10,000</small>
 
         <label htmlFor="company">
-          About the company <span className="muted optional">Optional, improves accuracy</span>
+          About the company <span className="optional">Optional · improves accuracy</span>
         </label>
         <textarea id="company" maxLength={5000} rows={3} value={form.company_profile}
                   onChange={set("company_profile")} placeholder="Paste the 'About us' section if there is one" />
 
-        <label htmlFor="salary">Salary or stipend <span className="muted optional">Optional</span></label>
+        <label htmlFor="salary">Salary or stipend <span className="optional">Optional</span></label>
         <input id="salary" maxLength={100} value={form.salary_range} onChange={set("salary_range")}
                placeholder="e.g. 25,000 per month" />
 
         {error && <p className="error" role="alert">{error}</p>}
 
         <div className="actions">
-          <button type="button" className="btn btn-gray" onClick={() => load(EMPTY)}
-                  disabled={busy || (!form.title && !form.description && !form.company_profile && !form.salary_range)}>
+          <button type="button" className="btn btn-secondary" onClick={() => load(EMPTY)}
+                  disabled={busy || Object.values(form).every((v) => !v)}>
             Clear
           </button>
-          <button className="btn btn-filled btn-large" disabled={busy || form.description.trim().length < 20}>
-            {busy ? "Checking…" : "Check this posting"}
+          <button className="btn btn-primary" disabled={busy || form.description.trim().length < 20}>
+            {busy ? "Checking…" : "Check posting"}
           </button>
         </div>
       </form>
 
-      <div className="result-col stack-lg">
+      <div className="stack-lg">
         {result ? (
-          <VerdictCard v={result} posting={checked} onError={onError} />
+          <>
+            <VerdictCard v={result} posting={checked} onError={onError} />
+            {checked && <WebEvidence checkId={result.id} posting={checked} onError={onError} />}
+          </>
         ) : (
-          <div className="glass panel empty">
-            <div className="dial placeholder" aria-hidden="true">
-              <div className="dial-inner"><span className="dial-num">?</span></div>
-            </div>
-            <h2>Your result appears here</h2>
-            <p className="muted">
-              You get a 0–100 risk score and the specific red flags found, such as a fee request or a recruiter
-              using a Gmail address. Try a sample to see how it works.
-            </p>
-          </div>
+          <section className="card">
+            <h2>How a posting is checked</h2>
+            <ol className="steps">
+              <li>
+                <span className="step-n">1</span>
+                <div><strong>Red-flag rules</strong><p className="muted small">Fee or deposit requests, WhatsApp or
+                  Telegram-only contact, Gmail recruiters, daily-pay promises: patterns common in Indian job scams.</p></div>
+              </li>
+              <li>
+                <span className="step-n">2</span>
+                <div><strong>Trained model</strong><p className="muted small">A text classifier trained on 17,880 real and
+                  fake postings, retrained with moderator-verified reports.</p></div>
+              </li>
+              <li>
+                <span className="step-n">3</span>
+                <div><strong>Web check</strong><p className="muted small">Searches the company, phone number and email
+                  for complaints and for an official website. Only those details leave FakeHire.</p></div>
+              </li>
+              <li>
+                <span className="step-n">4</span>
+                <div><strong>Community reports</strong><p className="muted small">Reports from users, confirmed by
+                  moderators, appear under Scam companies.</p></div>
+              </li>
+            </ol>
+          </section>
         )}
-        <ScamCompanies />
       </div>
     </div>
   );

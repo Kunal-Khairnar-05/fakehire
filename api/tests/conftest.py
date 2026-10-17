@@ -7,9 +7,10 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.clients.ml_client import MlServiceUnavailable
+from app.clients.search_client import SearchResult, SearchUnavailable
 from app.core.config import settings
 from app.db import get_session
-from app.deps import get_ml_client, get_rate_limiter, get_redis
+from app.deps import get_ml_client, get_rate_limiter, get_redis, get_search_client
 from app.main import app
 from app.services.rate_limiter import RateLimiter
 
@@ -39,6 +40,29 @@ class FakeMlClient:
     def current_version(self) -> str:
         # Like the real client: still knows the last version even while "down"
         return self.response["model_version"]
+
+    def close(self):
+        pass
+
+
+class FakeSearchClient:
+    """Stands in for Tavily: canned results per query, counts calls, can be 'down'.
+    Tests never spend real API quota."""
+
+    def __init__(self):
+        self.calls: list[str] = []
+        self.down = False
+        self.results: dict[str, list[SearchResult]] = {}   # substring of query -> results
+
+    @property
+    def enabled(self) -> bool:
+        return True
+
+    def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
+        self.calls.append(query)
+        if self.down:
+            raise SearchUnavailable("simulated outage")
+        return next((r for key, r in self.results.items() if key in query), [])
 
     def close(self):
         pass
@@ -77,7 +101,12 @@ def redis():
 
 
 @pytest.fixture
-def client(db, ml, redis):
+def search():
+    return FakeSearchClient()
+
+
+@pytest.fixture
+def client(db, ml, redis, search):
     TestSession = sessionmaker(bind=db, expire_on_commit=False)
 
     def test_session():
@@ -89,6 +118,7 @@ def client(db, ml, redis):
     app.dependency_overrides[get_ml_client] = lambda: ml
     app.dependency_overrides[get_redis] = lambda: redis
     app.dependency_overrides[get_rate_limiter] = lambda: RateLimiter(redis, TEST_RATE_LIMIT)
+    app.dependency_overrides[get_search_client] = lambda: search
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

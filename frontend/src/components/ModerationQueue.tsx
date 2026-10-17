@@ -56,7 +56,7 @@ export default function ModerationQueue({ onError }: Props) {
 
   if (!loading && !error && items.length === 0) {
     return (
-      <div className="glass panel empty">
+      <div className="card empty">
         <h2>The queue is clear</h2>
         <p className="muted">{notice ?? "New scam reports from users will appear here, oldest first."}</p>
       </div>
@@ -64,7 +64,7 @@ export default function ModerationQueue({ onError }: Props) {
   }
 
   return (
-    <section className="glass panel">
+    <section className="card">
       <div className="row-between">
         <h2>Reports to review</h2>
         {loading && <span className="muted small">Refreshing…</span>}
@@ -79,7 +79,7 @@ export default function ModerationQueue({ onError }: Props) {
               <span className={`score-chip ${bandClass(item.verdict)}`} title="Score when it was checked">
                 {item.score}
               </span>
-              <div className="history-text">
+              <div className="list-text">
                 <strong>{item.company_name}</strong>
                 <span className="muted">
                   Reported {new Date(item.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
@@ -95,11 +95,11 @@ export default function ModerationQueue({ onError }: Props) {
             </div>
 
             <div className="actions">
-              <button className="btn btn-gray btn-small" disabled={deciding !== null}
+              <button className="btn btn-secondary btn-sm" disabled={deciding !== null}
                       onClick={() => decide(item, "rejected")}>
                 Not a scam
               </button>
-              <button className="btn btn-destructive btn-small" disabled={deciding !== null}
+              <button className="btn btn-danger btn-sm" disabled={deciding !== null}
                       onClick={() => decide(item, "verified")}>
                 {deciding === item.id ? "Saving…" : "Confirm scam"}
               </button>
@@ -109,7 +109,7 @@ export default function ModerationQueue({ onError }: Props) {
       </ul>
 
       {nextAfter && (
-        <button className="btn btn-gray btn-block" disabled={loading} onClick={() => loadPage(nextAfter)}>
+        <button className="btn btn-secondary btn-block" disabled={loading} onClick={() => loadPage(nextAfter)}>
           {loading ? "Loading…" : "Load more"}
         </button>
       )}

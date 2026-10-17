@@ -156,3 +156,35 @@ class TrendingOut(BaseModel):
     items: list[TrendingItem]
     # "live" = this week's Redis leaderboard; "fallback" = Redis down, all-time counts from Postgres
     source: Literal["live", "fallback"]
+
+
+# ---------- web check (P2.5) ----------
+
+class WebCheckIn(BaseModel):
+    posting: PostingIn
+    company_name: str | None = Field(None, max_length=200)
+
+
+class IdentifiersOut(BaseModel):
+    company: str | None
+    phones: list[str]
+    emails: list[str]
+
+
+class EvidenceOut(BaseModel):
+    kind: Literal["company", "phone", "email"]
+    title: str
+    url: str
+    domain: str
+    snippet: str
+    complaint: bool
+    official: bool           # on the company's own domain (e.g. its recruitment-fraud notice)
+
+
+class WebCheckOut(BaseModel):
+    status: Literal["impersonation_risk", "complaints_found", "no_reports_found", "nothing_to_search", "unavailable"]
+    summary: str
+    identifiers: IdentifiersOut
+    evidence: list[EvidenceOut]
+    official_site: EvidenceOut | None
+    searches: int            # searches that used API quota (0 = everything came from the cache)

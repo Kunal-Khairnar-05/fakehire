@@ -29,5 +29,10 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 24 * 60 * 60     # cached verdicts expire after 24 h
     rate_limit_per_minute: int = 30           # checks per user per minute
 
+    # Web check (P2.5). No key = the feature reports "unavailable" and everything else works.
+    tavily_api_key: str | None = None
+    web_timeout_seconds: float = 8.0
+    web_cache_ttl_seconds: int = 24 * 60 * 60   # the same search within 24 h costs no quota
+
 
 settings = Settings()
