@@ -12,4 +12,7 @@ retrain.py
 retrain.Dockerfile
 requirements-retrain.txt
 conftest.py
-requirements.txt
+requirements-dev.txt
+app.py
+fetch_model.py
+vercel.json

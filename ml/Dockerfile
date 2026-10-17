@@ -12,8 +12,8 @@ WORKDIR /app
 # ---- Dependencies first (layer caching) ----
 # Docker caches each step. Requirements change rarely, code changes often.
 # Copying requirements alone first means editing code does NOT reinstall pandas/sklearn.
-COPY requirements-service.txt .
-RUN pip install --no-cache-dir -r requirements-service.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # ---- Then the code ----
 COPY fakehire_ml/ fakehire_ml/

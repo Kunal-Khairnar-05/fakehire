@@ -24,8 +24,15 @@ class Settings(BaseSettings):
     ml_service_url: str = "http://localhost:8001"
     ml_timeout_seconds: float = 2.0   # never wait forever on another service
 
+    # Database connection pool per API process. Serverless deployments run many small
+    # instances, so they use a smaller pool (each instance only handles a few requests at once).
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+
     # Redis (Step 9)
     redis_url: str = "redis://localhost:6379/0"
+    # 0.25 s suits Redis in the next container; a cloud Redis (TLS, over the internet) needs longer
+    redis_timeout_seconds: float = 0.25
     cache_ttl_seconds: int = 24 * 60 * 60     # cached verdicts expire after 24 h
     rate_limit_per_minute: int = 30           # checks per user per minute
 

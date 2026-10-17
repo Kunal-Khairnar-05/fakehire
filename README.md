@@ -1,6 +1,6 @@
 # FakeHire
 
-[![CI](https://github.com/kunal-khairnar-05/fakehire/actions/workflows/ci.yml/badge.svg)](https://github.com/kunal-khairnar-05/fakehire/actions/workflows/ci.yml)
+[![CI](https://github.com/Kunal-Khairnar-05/fakehire/actions/workflows/ci.yml/badge.svg)](https://github.com/Kunal-Khairnar-05/fakehire/actions/workflows/ci.yml)
 
 Detects fake job and internship postings. Paste a posting or recruiter message and get a 0–100 risk score, a verdict, and the red flags found.
 

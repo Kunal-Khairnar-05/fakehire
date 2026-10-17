@@ -41,8 +41,8 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip                              # reuse downloaded packages between runs
-          cache-dependency-path: ml/requirements.txt
-      - run: pip install -r ml/requirements.txt kaggle==1.6.17
+          cache-dependency-path: ml/requirements-dev.txt
+      - run: pip install -r ml/requirements-dev.txt kaggle==1.6.17
 
       # The dataset isn't in git, so CI downloads it with YOUR Kaggle API key,
       # stored as encrypted repository secrets (never visible in logs).

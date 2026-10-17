@@ -12,4 +12,7 @@ explore_fakes.py
 train.py
 conftest.py
 requirements.txt
-requirements-service.txt
+requirements-dev.txt
+app.py
+fetch_model.py
+vercel.json
