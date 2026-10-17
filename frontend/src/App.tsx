@@ -5,13 +5,19 @@ import AuthForm from "./components/AuthForm";
 import CheckForm from "./components/CheckForm";
 import HistoryList from "./components/HistoryList";
 import Logo from "./components/Logo";
+import ModerationQueue from "./components/ModerationQueue";
+import MyReports from "./components/MyReports";
 import { clearSessionState, useSessionState } from "./useSessionState";
 
-type Tab = "check" | "history";
-const TABS: { id: Tab; label: string }[] = [
+type Tab = "check" | "history" | "moderation";
+const BASE_TABS: { id: Tab; label: string }[] = [
   { id: "check", label: "Check a posting" },
   { id: "history", label: "My checks" },
 ];
+
+// The API is what actually protects moderation (403 for students). Hiding the tab is
+// only about not showing people a button they can't use.
+const canModerate = (user: User) => user.role === "moderator" || user.role === "admin";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -50,7 +56,12 @@ export default function App() {
       .finally(() => setBooting(false));
   }, []);
 
-  const tabIndex = TABS.findIndex((t) => t.id === tab);
+  const tabs = user && canModerate(user)
+    ? [...BASE_TABS, { id: "moderation" as Tab, label: "Moderation" }]
+    : BASE_TABS;
+  // A saved "moderation" tab from an earlier session falls back to "check" for non-moderators
+  const active = tabs.some((t) => t.id === tab) ? tab : "check";
+  const tabIndex = tabs.findIndex((t) => t.id === active);
 
   return (
     <>
@@ -65,6 +76,7 @@ export default function App() {
           <header className="topbar glass">
             <Logo height={30} />
             <div className="who">
+              {canModerate(user) && <span className="pill neutral">{user.role}</span>}
               <span className="who-email">{user.email}</span>
               <button className="btn btn-gray btn-small" onClick={logout}>Log out</button>
             </div>
@@ -72,16 +84,24 @@ export default function App() {
 
           <main className="shell">
             {/* iOS-style segmented control; the thumb slides to the selected tab */}
-            <div className="segmented" role="tablist" style={{ "--i": tabIndex } as CSSProperties}>
+            <div className="segmented" role="tablist"
+                 style={{ "--i": tabIndex, "--n": tabs.length } as CSSProperties}>
               <span className="segmented-thumb" aria-hidden="true" />
-              {TABS.map((t) => (
-                <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
+              {tabs.map((t) => (
+                <button key={t.id} role="tab" aria-selected={active === t.id} onClick={() => setTab(t.id)}>
                   {t.label}
                 </button>
               ))}
             </div>
 
-            {tab === "check" ? <CheckForm onError={handleError} /> : <HistoryList onError={handleError} />}
+            {active === "check" && <CheckForm onError={handleError} />}
+            {active === "history" && (
+              <div className="stack-lg">
+                <HistoryList onError={handleError} />
+                <MyReports onError={handleError} />
+              </div>
+            )}
+            {active === "moderation" && <ModerationQueue onError={handleError} />}
 
             <footer className="foot">
               Scores combine hand-written red-flag rules with a model trained on 17,880 job postings. A verdict is

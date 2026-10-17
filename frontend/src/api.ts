@@ -29,6 +29,28 @@ export type CheckSummary = {
 
 export type History = { items: CheckSummary[]; next_before: string | null };
 
+export type ReportStatus = "pending" | "verified" | "rejected";
+
+export type Report = {
+  id: number;
+  check_id: number;
+  company_name: string;
+  reason: string | null;
+  status: ReportStatus;
+  created_at: string;
+  reviewed_at: string | null;
+};
+
+// A queue item = the report + the posting it's about, so moderators can judge it
+export type QueueItem = Report & {
+  title: string | null;
+  snippet: string | null;
+  score: number;
+  verdict: Verdict["verdict"];
+};
+
+export type Queue = { items: QueueItem[]; next_after: string | null };
+
 export type PostingInput = {
   title: string;
   description: string;
@@ -104,8 +126,8 @@ async function errorMessage(res: Response): Promise<string> {
   return `Request failed (${res.status})`;
 }
 
-const json = (body: unknown): RequestInit => ({
-  method: "POST",
+const json = (body: unknown, method = "POST"): RequestInit => ({
+  method,
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(body),
 });
@@ -130,4 +152,19 @@ export const api = {
     if (before) params.set("before", before);
     return request<History>(`/api/v1/checks/me?${params}`);
   },
+
+  report: (check_id: number, company_name: string, reason: string) =>
+    request<Report>("/api/v1/reports", json({ check_id, company_name, reason: reason.trim() || null })),
+
+  myReports: () => request<Report[]>("/api/v1/reports/me"),
+
+  // Moderators only (the API answers 403 for everyone else)
+  queue: (after?: string | null) => {
+    const params = new URLSearchParams({ limit: "10" });
+    if (after) params.set("after", after);
+    return request<Queue>(`/api/v1/reports/queue?${params}`);
+  },
+
+  review: (id: number, status: "verified" | "rejected") =>
+    request<Report>(`/api/v1/reports/${id}`, json({ status }, "PATCH")),
 };

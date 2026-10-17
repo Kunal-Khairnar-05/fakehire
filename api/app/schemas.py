@@ -89,7 +89,15 @@ class CheckHistoryOut(BaseModel):
 # ---------- reports (Phase 2) ----------
 
 class ReportIn(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)   # "  Acme  " -> "Acme"
+    model_config = ConfigDict(
+        str_strip_whitespace=True,   # "  Acme  " -> "Acme"
+        # What Swagger pre-fills instead of "string" placeholders
+        json_schema_extra={"example": {
+            "check_id": 1,
+            "company_name": "Global Typing Solutions",
+            "reason": "Asked for a Rs 499 security deposit on Telegram before giving any work",
+        }},
+    )
 
     check_id: int
     company_name: str = Field(min_length=2, max_length=200)

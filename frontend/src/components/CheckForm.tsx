@@ -109,7 +109,7 @@ export default function CheckForm({ onError }: Props) {
 
       <div className="result-col">
         {result ? (
-          <VerdictCard v={result} />
+          <VerdictCard v={result} onError={onError} />
         ) : (
           <div className="glass panel empty">
             <div className="dial placeholder" aria-hidden="true">
