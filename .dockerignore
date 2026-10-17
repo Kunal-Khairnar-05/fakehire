@@ -1,0 +1,8 @@
+# Used only by builds whose context is the project root (the nginx image).
+# Allow-list: ignore everything, then let back in only what that build needs.
+# Without this, Docker would upload data/ (50 MB), .venv/ and node_modules/ on every build.
+*
+!frontend/
+!nginx/
+frontend/node_modules/
+frontend/dist/

@@ -1,9 +1,10 @@
 # The whole FakeHire system. Start:  docker compose up -d --build
 #                                Stop:   docker compose down
 #
-#   laptop :80 ──► nginx ──► api ×3 ──► postgres
-#                                  ├──► redis
-#                                  └──► ml
+#   laptop :80 ──► nginx ──► / : React app (built into the nginx image)
+#                        └─► /api : api ×3 ──► postgres
+#                                         ├──► redis
+#                                         └──► ml
 #
 # Values like ${POSTGRES_USER} are read from the .env file next to this one.
 
@@ -68,11 +69,12 @@ services:
     # no "ports": all traffic must come through Nginx
 
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: .                        # project root: the build needs both frontend/ and nginx/
+      dockerfile: nginx/Dockerfile      # multi-stage: Node builds the React app, nginx serves it
+    image: fakehire-nginx:v1
     ports:
       - "80:80"                         # the ONLY public entry point
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       api:
         condition: service_healthy

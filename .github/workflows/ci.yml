@@ -2,9 +2,10 @@
 # Each "job" runs on a fresh Ubuntu machine provided by GitHub. Jobs run in PARALLEL
 # unless one "needs" another.
 #
-#   lint ─┐
-#   ml   ─┼──► docker (only if all three pass)
-#   api  ─┘
+#   lint     ─┐
+#   ml       ─┤
+#   api      ─┼──► docker (only if all four pass)
+#   frontend ─┘
 
 name: CI
 
@@ -110,11 +111,27 @@ jobs:
       - name: Run API tests
         run: python -m pytest api/tests -v
 
+  frontend:
+    name: Frontend type-check + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build                        # tsc fails the job on any type error
+        working-directory: frontend
+
   docker:
     name: Docker images build
-    needs: [lint, ml, api]                        # only build if everything above passed
+    needs: [lint, ml, api, frontend]              # only build if everything above passed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t fakehire-api:ci api
       - run: docker build -t fakehire-ml:ci ml
+      - run: docker build -f nginx/Dockerfile -t fakehire-nginx:ci .
