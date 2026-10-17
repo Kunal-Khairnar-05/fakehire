@@ -23,10 +23,11 @@ from .routes import auth, checks, companies, reports, web
 async def lifespan(app: FastAPI):
     # Startup: shared clients for the whole process
     app.state.ml_client = MlClient(settings.ml_service_url, settings.ml_timeout_seconds)
-    # Short timeouts: if Redis is down we want to give up in 0.25 s and fail open,
+    # Short timeouts: if Redis is down we want to give up quickly and fail open,
     # not add seconds to every request.
     app.state.redis = Redis.from_url(settings.redis_url, decode_responses=True,
-                                     socket_timeout=0.25, socket_connect_timeout=0.25)
+                                     socket_timeout=settings.redis_timeout_seconds,
+                                     socket_connect_timeout=settings.redis_timeout_seconds)
     app.state.search_client = SearchClient(settings.tavily_api_key, settings.web_timeout_seconds)
     yield
     # Shutdown: close open connections cleanly
