@@ -75,3 +75,13 @@ def test_hot_reload_follows_the_pointer_and_survives_a_broken_model(tmp_path, mo
 
         (tmp_path / "current.json").write_text(json.dumps({"file": "model_v1.10.joblib"}))
         assert client.get("/health").json()["model_version"] == "v1.9"     # broken file: old model stays
+
+
+def test_internal_token_protects_predict_but_not_health(monkeypatch):
+    monkeypatch.setattr(ml_app, "INTERNAL_TOKEN", "s3cret-token")
+    body = {"description": "Pay a registration fee of Rs 1999 and message HR on WhatsApp."}
+    with TestClient(app) as client:    # its own app start-up: other tests may have shut the shared one down
+        assert client.post("/predict", json=body).status_code == 401
+        assert client.post("/predict", json=body, headers={"X-Internal-Token": "wrong"}).status_code == 401
+        assert client.post("/predict", json=body, headers={"X-Internal-Token": "s3cret-token"}).status_code == 200
+        assert client.get("/health").status_code == 200        # monitoring stays open

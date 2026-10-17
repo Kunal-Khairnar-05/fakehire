@@ -1,0 +1,15 @@
+# Not needed in the deployed function (keeps the upload small)
+tests/
+conftest.py
+models/
+*.ipynb
+check_data.py
+explore_fakes.py
+train.py
+retrain.py
+retrain.Dockerfile*
+requirements-retrain.txt
+requirements-dev.txt
+Dockerfile
+.dockerignore
+__pycache__/

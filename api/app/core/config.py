@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # ml-service (Step 5). Locally the container is published on port 8001.
     ml_service_url: str = "http://localhost:8001"
     ml_timeout_seconds: float = 2.0   # never wait forever on another service
+    ml_internal_token: str | None = None   # sent as X-Internal-Token when ml-service is public
 
     # Database connection pool per API process. Serverless deployments run many small
     # instances, so they use a smaller pool (each instance only handles a few requests at once).

@@ -1,7 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": [
+    "sin1"
+  ],
   "buildCommand": "python fetch_model.py",
   "functions": {
-    "app.py": { "maxDuration": 30 }
+    "app.py": {
+      "maxDuration": 30
+    }
   }
 }
