@@ -15,7 +15,7 @@ from .clients.ml_client import MlClient
 from .core.config import settings
 from .db import get_session
 from .deps import get_redis
-from .routes import auth, checks
+from .routes import auth, checks, reports
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ INSTANCE = socket.gethostname()   # inside Docker: the container id, different f
 app = FastAPI(title="FakeHire API", version="1.0", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(checks.router)
+app.include_router(reports.router)
 
 
 @app.middleware("http")

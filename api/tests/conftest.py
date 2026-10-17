@@ -108,6 +108,18 @@ def auth(client):
 
 
 @pytest.fixture
+def moderator(client, db):
+    """Headers for a moderator. The role must be set BEFORE login, because it's baked into the token."""
+    email = "mod@example.com"
+    client.post("/api/v1/auth/register", json={"email": email, "password": "correct-horse-7"})
+    with db.begin() as conn:
+        conn.execute(text("UPDATE users SET role = 'moderator' WHERE email = :e"), {"e": email})
+    token = client.post("/api/v1/auth/login",
+                        data={"username": email, "password": "correct-horse-7"}).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
 def new_user(client):
     """Call new_user("ravi@example.com") inside a test to get a second user's headers."""
     return lambda email: make_user(client, email)

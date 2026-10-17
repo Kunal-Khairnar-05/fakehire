@@ -20,6 +20,7 @@ from .services.auth_service import AuthService
 from .services.cache import VerdictCache
 from .services.check_service import CheckService
 from .services.rate_limiter import RateLimiter
+from .services.report_service import ReportService
 
 # Reads "Authorization: Bearer <token>" from the request. tokenUrl tells Swagger where to log in.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -81,3 +82,20 @@ def enforce_rate_limit(claims: dict = Depends(get_token_claims),
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS,
                             f"Too many checks. Try again in {wait} seconds.",
                             headers={"Retry-After": str(wait)})
+
+
+def get_report_service(session: Session = Depends(get_session)) -> ReportService:
+    return ReportService(session)
+
+
+def require_role(*allowed: str):
+    """Role-based access control (RBAC). Usage:  Depends(require_role("moderator", "admin"))
+
+    The role comes from the signed JWT, so no database call is needed. Trade-off: a role
+    change takes effect at the user's next login (tokens last 60 minutes)."""
+    def check_role(claims: dict = Depends(get_token_claims)) -> dict:
+        if claims.get("role") not in allowed:
+            # 403 = "I know who you are, and you're not allowed" (401 = "who are you?")
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "You don't have permission to do this")
+        return claims
+    return check_role

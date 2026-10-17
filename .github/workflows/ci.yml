@@ -101,12 +101,7 @@ jobs:
       - run: pip install -r api/requirements-dev.txt
 
       - name: Apply database migrations
-        env:
-          PGPASSWORD: ci-password
-        run: |
-          for f in db/migrations/*.sql; do
-            psql -h localhost -U fakehire -d fakehire_test -v ON_ERROR_STOP=1 -f "$f"
-          done
+        run: python db/migrate.py              # same runner you use locally
 
       - name: Run API tests
         run: python -m pytest api/tests -v

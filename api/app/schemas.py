@@ -4,6 +4,7 @@ Response schemas are also a security boundary: UserOut has no password_hash fiel
 so it can never be sent to a client by accident.
 """
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -83,3 +84,43 @@ class CheckHistoryOut(BaseModel):
     items: list[CheckSummary]
     # Pass this as ?before=... to get the next page. None = no more pages.
     next_before: datetime | None
+
+
+# ---------- reports (Phase 2) ----------
+
+class ReportIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)   # "  Acme  " -> "Acme"
+
+    check_id: int
+    company_name: str = Field(min_length=2, max_length=200)
+    reason: str | None = Field(None, max_length=1000)
+
+
+class ReportOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    check_id: int
+    company_name: str
+    reason: str | None
+    status: Literal["pending", "verified", "rejected"]
+    created_at: datetime
+    reviewed_at: datetime | None
+
+
+class QueueItem(ReportOut):
+    """A pending report plus what the moderator needs to judge it: the checked posting."""
+    title: str | None
+    snippet: str | None
+    score: int
+    verdict: str
+
+
+class QueueOut(BaseModel):
+    items: list[QueueItem]
+    # Pass as ?after=... for the next page. The queue is oldest-first, so pages move FORWARD in time.
+    next_after: datetime | None
+
+
+class ReviewIn(BaseModel):
+    status: Literal["verified", "rejected"]
