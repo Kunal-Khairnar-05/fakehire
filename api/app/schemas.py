@@ -102,6 +102,9 @@ class ReportIn(BaseModel):
     check_id: int
     company_name: str = Field(min_length=2, max_length=200)
     reason: str | None = Field(None, max_length=1000)
+    # The posting exactly as it was checked. Optional, but without it the report can't be
+    # used for retraining. Must hash to the same SHA-256 as the check, or it's rejected.
+    posting: PostingIn | None = None
 
 
 class ReportOut(BaseModel):

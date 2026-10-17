@@ -8,5 +8,8 @@ models/
 check_data.py
 explore_fakes.py
 train.py
+retrain.py
+retrain.Dockerfile
+requirements-retrain.txt
 conftest.py
 requirements.txt

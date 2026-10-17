@@ -1,0 +1,15 @@
+# Ignore file used ONLY when building retrain.Dockerfile (Docker picks <Dockerfile>.dockerignore).
+# The ml-service image keeps using .dockerignore, which excludes retrain.py.
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/
+models/
+service/
+*.ipynb
+check_data.py
+explore_fakes.py
+train.py
+conftest.py
+requirements.txt
+requirements-service.txt

@@ -1,0 +1,41 @@
+{
+  "version": "v1.2",
+  "previous": "v1.1",
+  "feedback_examples": 2,
+  "product": [
+    {
+      "test set": "full",
+      "precision": 0.859,
+      "recall": 0.777,
+      "f1": 0.816,
+      "pr_auc": 0.85,
+      "false_alarm_rate": 0.006
+    },
+    {
+      "test set": "short",
+      "precision": 0.628,
+      "recall": 0.574,
+      "f1": 0.6,
+      "pr_auc": 0.62,
+      "false_alarm_rate": 0.015
+    }
+  ],
+  "previous_product": [
+    {
+      "test set": "full",
+      "precision": 0.847,
+      "recall": 0.766,
+      "f1": 0.804,
+      "pr_auc": 0.853,
+      "false_alarm_rate": 0.006
+    },
+    {
+      "test set": "short",
+      "precision": 0.635,
+      "recall": 0.574,
+      "f1": 0.603,
+      "pr_auc": 0.615,
+      "false_alarm_rate": 0.015
+    }
+  ]
+}

@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from ..models import Check, Report
 from ..repositories.company_repo import CompanyRepository
 from ..repositories.report_repo import ReportRepository
+from ..schemas import PostingIn
+from .check_service import text_hash
 from .trending import TrendingBoard
 
 
@@ -31,6 +33,10 @@ class AlreadyReviewed(Exception):
     pass
 
 
+class PostingMismatch(Exception):
+    """The posting sent with a report isn't the one that was checked."""
+
+
 class ReportService:
     def __init__(self, session: Session, trending: TrendingBoard):
         self.session = session
@@ -38,14 +44,19 @@ class ReportService:
         self.companies = CompanyRepository(session)
         self.trending = trending
 
-    def report(self, user_id: int, check_id: int, company_name: str, reason: str | None) -> Report:
+    def report(self, user_id: int, check_id: int, company_name: str, reason: str | None,
+               posting: PostingIn | None = None) -> Report:
         check = self.session.get(Check, check_id)
         # Someone else's check gets the SAME answer as a missing one: no hint that it exists
         if check is None or check.user_id != user_id:
             raise CheckNotFound()
+        # Integrity: the text must be exactly what was scored, or it could poison training data
+        if posting is not None and text_hash(posting) != check.text_hash:
+            raise PostingMismatch()
         try:
             report = self.reports.add(check_id=check_id, reporter_id=user_id,
-                                      company_name=company_name, reason=reason or None)
+                                      company_name=company_name, reason=reason or None,
+                                      posting=posting.model_dump() if posting else None)
             self.session.commit()
             return report
         except IntegrityError:

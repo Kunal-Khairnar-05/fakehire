@@ -5,7 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from ..deps import get_report_service, get_token_claims, require_role
 from ..schemas import QueueItem, QueueOut, ReportIn, ReportOut, ReviewIn
-from ..services.report_service import AlreadyReported, AlreadyReviewed, CheckNotFound, ReportNotFound, ReportService
+from ..services.report_service import (
+    AlreadyReported,
+    AlreadyReviewed,
+    CheckNotFound,
+    PostingMismatch,
+    ReportNotFound,
+    ReportService,
+)
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
@@ -18,9 +25,12 @@ def report_scam(body: ReportIn,
                 claims: dict = Depends(get_token_claims),
                 service: ReportService = Depends(get_report_service)):
     try:
-        return service.report(int(claims["sub"]), body.check_id, body.company_name, body.reason)
+        return service.report(int(claims["sub"]), body.check_id, body.company_name, body.reason, body.posting)
     except CheckNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Check not found")
+    except PostingMismatch:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            "The posting doesn't match the one that was checked. Check it again, then report.")
     except AlreadyReported:
         raise HTTPException(status.HTTP_409_CONFLICT, "You already reported this check")
 

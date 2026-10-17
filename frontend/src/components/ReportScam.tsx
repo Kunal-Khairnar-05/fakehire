@@ -1,12 +1,12 @@
 import { type FormEvent, useState } from "react";
 
-import { api, ApiError } from "../api";
+import { api, ApiError, type PostingInput } from "../api";
 import { useSessionState } from "../useSessionState";
 
-type Props = { checkId: number; onError: (err: unknown) => string };
+type Props = { checkId: number; posting: PostingInput | null; onError: (err: unknown) => string };
 
 // Inline "Report as scam" form at the bottom of a result card
-export default function ReportScam({ checkId, onError }: Props) {
+export default function ReportScam({ checkId, posting, onError }: Props) {
   // Remember which checks were reported in this session, so the form doesn't come back
   const [reported, setReported] = useSessionState<number[]>("reported-checks", []);
   const [open, setOpen] = useState(false);
@@ -22,7 +22,7 @@ export default function ReportScam({ checkId, onError }: Props) {
     setError(null);
     setBusy(true);
     try {
-      await api.report(checkId, company, reason);
+      await api.report(checkId, company, reason, posting);
       markReported();
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) markReported(); // already reported earlier
@@ -60,6 +60,12 @@ export default function ReportScam({ checkId, onError }: Props) {
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g. Asked for a Rs 499 deposit on Telegram" />
 
+      {!posting && (
+        <small className="muted">
+          This result is from an earlier session, so the posting text can't be attached and the report
+          won't help retrain the model. Check the posting again first if you can.
+        </small>
+      )}
       {error && <p className="error" role="alert">{error}</p>}
 
       <div className="actions">

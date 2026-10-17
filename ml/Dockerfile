@@ -4,6 +4,7 @@ FROM python:3.11-slim
 # Don't write .pyc files; print logs immediately instead of buffering them
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    MODELS_DIR=/app/models \
     MODEL_PATH=/app/models/model_v1.1.joblib
 
 WORKDIR /app
@@ -23,7 +24,8 @@ RUN useradd --create-home appuser
 USER appuser
 
 # The model is NOT baked into the image. It is mounted at /app/models at run time,
-# so a new model version doesn't need a new image.
+# so a new model version doesn't need a new image. models/current.json (written by
+# retrain.py) says which file to serve; without it, MODEL_PATH (the v1.1 baseline) is used.
 
 EXPOSE 8000
 

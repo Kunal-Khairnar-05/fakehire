@@ -107,3 +107,40 @@ def test_review_errors(client, moderator, auth):
     report_id = report(client, auth, make_check(client, auth)).json()["id"]
     assert client.patch("/api/v1/reports/999999", json={"status": "verified"}, headers=moderator).status_code == 404
     assert client.patch(f"/api/v1/reports/{report_id}", json={"status": "maybe"}, headers=moderator).status_code == 422
+
+
+# ---------- posting text for retraining (004) ----------
+
+def test_report_stores_the_checked_posting(client, auth, db):
+    check_id = make_check(client, auth)
+    r = client.post("/api/v1/reports", headers=auth, json={
+        "check_id": check_id, "company_name": "Acme", "posting": {**POSTING, "title": "Data Entry"}})
+    assert r.status_code == 201
+    with db.connect() as conn:
+        stored = conn.execute(text("SELECT posting FROM reports")).scalar_one()
+    assert stored["description"] == POSTING["description"]
+
+
+def test_same_text_with_different_spacing_still_matches(client, auth):
+    check_id = make_check(client, auth)
+    messy = {"title": "  DATA entry ", "description": "PAY a registration fee of Rs 1999   to confirm your seat today."}
+    r = client.post("/api/v1/reports", headers=auth,
+                    json={"check_id": check_id, "company_name": "Acme", "posting": messy})
+    assert r.status_code == 201
+
+
+def test_report_with_different_text_is_rejected(client, auth, db):
+    check_id = make_check(client, auth)
+    poisoned = {"title": "Data Entry", "description": "A perfectly normal software engineering internship posting."}
+    r = client.post("/api/v1/reports", headers=auth,
+                    json={"check_id": check_id, "company_name": "Acme", "posting": poisoned})
+    assert r.status_code == 422
+    with db.connect() as conn:
+        assert conn.execute(text("SELECT count(*) FROM reports")).scalar_one() == 0
+
+
+def test_report_without_posting_is_stored_as_sql_null(client, auth, db):
+    # Regression: Python None used to be stored as JSON null, which "IS NOT NULL" lets through
+    report(client, auth, make_check(client, auth))
+    with db.connect() as conn:
+        assert conn.execute(text("SELECT posting IS NULL FROM reports")).scalar_one() is True

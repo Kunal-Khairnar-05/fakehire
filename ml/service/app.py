@@ -5,7 +5,10 @@ service means it can be scaled, restarted or replaced without touching the API.
 
 Run locally (from the ml/ folder):  uvicorn service.app:app --reload --port 8001
 """
+import json
+import logging
 import os
+import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -20,20 +23,55 @@ from fakehire_ml.rules import RuleEngine
 from fakehire_ml.scoring import combine
 
 # Configuration comes from environment variables (12-factor app), with a local default.
-MODEL_PATH = Path(os.getenv("MODEL_PATH", Path(__file__).resolve().parent.parent / "models" / "model_v1.1.joblib"))
+MODELS_DIR = Path(os.getenv("MODELS_DIR", Path(__file__).resolve().parent.parent / "models"))
+POINTER = MODELS_DIR / "current.json"     # written by retrain.py when a new model passes the gate
+MODEL_PATH = Path(os.getenv("MODEL_PATH", MODELS_DIR / "model_v1.1.joblib"))   # used if there's no pointer
+RELOAD_CHECK_SECONDS = 10
+
+log = logging.getLogger("uvicorn.error")
 
 LIMITED_NOTE = ("Only a short snippet was given, so this verdict is less reliable. "
                 "Paste the full posting, including the company description, for a better check.")
 
 state: dict = {}
+_reload_lock = threading.Lock()
+
+
+def _pointer_mtime() -> float | None:
+    return POINTER.stat().st_mtime if POINTER.exists() else None
+
+
+def load_model() -> None:
+    """Load whichever model current.json points at (or MODEL_PATH if there's no pointer)."""
+    path = MODELS_DIR / json.loads(POINTER.read_text())["file"] if POINTER.exists() else MODEL_PATH
+    bundle = joblib.load(path)
+    # ONE assignment swaps pipeline and version together, so a request running during a
+    # reload can never pair the new version number with the old pipeline.
+    state["model"] = (bundle["pipeline"], bundle["version"])
+    state["pointer_mtime"] = _pointer_mtime()
+    state["checked_at"] = time.monotonic()
+    log.info("Serving model %s from %s", bundle["version"], path.name)
+
+
+def reload_if_changed() -> None:
+    """HOT RELOAD: every ~10 s, check whether current.json changed; if so, load the new model.
+    No restart, no dropped requests. A broken new model is logged and the old one keeps serving."""
+    if time.monotonic() - state["checked_at"] < RELOAD_CHECK_SECONDS:
+        return
+    with _reload_lock:                       # several requests may arrive at once; reload only once
+        state["checked_at"] = time.monotonic()
+        if _pointer_mtime() == state["pointer_mtime"]:
+            return
+        try:
+            load_model()
+        except Exception:
+            log.exception("New model failed to load; still serving %s", state["model"][1])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Load the model ONCE at startup, not on every request (loading takes ~1 s).
-    bundle = joblib.load(MODEL_PATH)
-    state["pipeline"] = bundle["pipeline"]
-    state["version"] = bundle["version"]
+    load_model()
     state["rules"] = RuleEngine()
     yield
     state.clear()
@@ -83,16 +121,19 @@ class VerdictOut(BaseModel):
 
 @app.get("/health")
 def health():
-    """Used by Docker (and later Nginx) to ask: are you alive and is the model loaded?"""
-    return {"status": "ok", "model_version": state.get("version")}
+    """Used by Docker (and the API, to build cache keys) to ask: alive, and which model?"""
+    reload_if_changed()
+    return {"status": "ok", "model_version": state["model"][1]}
 
 
 @app.post("/predict", response_model=VerdictOut)
 def predict(body: PostingIn):
     start = time.perf_counter()
+    reload_if_changed()
+    pipeline, version = state["model"]
     posting = Posting(**body.model_dump())
 
-    p_model = float(state["pipeline"].predict_proba(to_frame([posting]))[0, 1])
+    p_model = float(pipeline.predict_proba(to_frame([posting]))[0, 1])
     verdict = combine(p_model, state["rules"].evaluate(posting))
 
     return VerdictOut(
@@ -101,7 +142,7 @@ def predict(body: PostingIn):
         p_model=verdict.p_model,
         rule_score=verdict.rule_score,
         flags=[Flag(rule=h.rule, message=h.message) for h in verdict.flags],
-        model_version=state["version"],
+        model_version=version,
         limited_info=posting.is_limited,
         note=LIMITED_NOTE if posting.is_limited else None,
         took_ms=round((time.perf_counter() - start) * 1000, 2),

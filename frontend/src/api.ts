@@ -158,8 +158,9 @@ export const api = {
     return request<History>(`/api/v1/checks/me?${params}`);
   },
 
-  report: (check_id: number, company_name: string, reason: string) =>
-    request<Report>("/api/v1/reports", json({ check_id, company_name, reason: reason.trim() || null })),
+  // posting = the text exactly as checked; lets moderators' decisions become training data
+  report: (check_id: number, company_name: string, reason: string, posting: PostingInput | null) =>
+    request<Report>("/api/v1/reports", json({ check_id, company_name, reason: reason.trim() || null, posting })),
 
   myReports: () => request<Report[]>("/api/v1/reports/me"),
 

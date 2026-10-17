@@ -9,3 +9,4 @@ pytest==8.3.3       # unit tests
 fastapi==0.115.4    # ml-service (Step 5)
 uvicorn==0.32.0     # server that runs FastAPI
 httpx==0.27.2       # needed by FastAPI's TestClient
+psycopg[binary]==3.2.3   # retrain.py reads reviewed reports from PostgreSQL

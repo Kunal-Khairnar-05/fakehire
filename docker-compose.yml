@@ -68,6 +68,26 @@ services:
         condition: service_healthy
     # no "ports": all traffic must come through Nginx
 
+  # A JOB, not a server: runs once and exits. The "jobs" profile keeps it out of
+  # "docker compose up"; start it with:  docker compose run --rm retrain
+  retrain:
+    profiles: ["jobs"]
+    build:
+      context: ./ml
+      dockerfile: retrain.Dockerfile
+    image: fakehire-retrain:v1
+    pull_policy: build                  # local image: build it, don't try Docker Hub first
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATASET_PATH: /data/fake_job_postings.csv
+      MODELS_DIR: /app/models
+    volumes:
+      - ./data/raw:/data:ro             # the EMSCAD dataset
+      - ./ml/models:/app/models         # read-WRITE: new model files + current.json land here
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   nginx:
     build:
       context: .                        # project root: the build needs both frontend/ and nginx/

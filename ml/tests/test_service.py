@@ -1,7 +1,11 @@
 """API tests for the ml-service. Needs a trained model (run ml/train.py first)."""
+import json
+
+import joblib
 import pytest
 from fastapi.testclient import TestClient
 
+import service.app as ml_app
 from service.app import MODEL_PATH, app
 
 pytestmark = pytest.mark.skipif(not MODEL_PATH.exists(), reason="no trained model; run ml/train.py")
@@ -16,7 +20,7 @@ def client():
 def test_health_reports_model_version(client):
     r = client.get("/health")
     assert r.status_code == 200
-    assert r.json()["model_version"] == "v1.1"
+    assert r.json()["model_version"].startswith("v1.")   # v1.1 baseline, or a retrained v1.N
 
 
 def test_short_snippet_gets_limited_info_note(client):
@@ -48,3 +52,26 @@ def test_scam_message_is_flagged(client):
 def test_too_short_description_is_rejected(client):
     r = client.post("/predict", json={"description": "hi"})
     assert r.status_code == 422   # Pydantic validation error
+
+
+def test_hot_reload_follows_the_pointer_and_survives_a_broken_model(tmp_path, monkeypatch):
+    """retrain.py promotes a model by rewriting current.json; ml-service must switch to it
+    without a restart, and must keep serving if the pointer names a broken file."""
+    bundle = joblib.load(MODEL_PATH)
+    joblib.dump(bundle, tmp_path / "model_v1.1.joblib")
+    joblib.dump({**bundle, "version": "v1.9"}, tmp_path / "model_v1.9.joblib")
+    (tmp_path / "model_v1.10.joblib").write_text("not a model")
+
+    monkeypatch.setattr(ml_app, "MODELS_DIR", tmp_path)
+    monkeypatch.setattr(ml_app, "POINTER", tmp_path / "current.json")
+    monkeypatch.setattr(ml_app, "MODEL_PATH", tmp_path / "model_v1.1.joblib")
+    monkeypatch.setattr(ml_app, "RELOAD_CHECK_SECONDS", 0)       # check on every request
+
+    with TestClient(app) as client:
+        assert client.get("/health").json()["model_version"] == "v1.1"     # no pointer yet
+
+        (tmp_path / "current.json").write_text(json.dumps({"file": "model_v1.9.joblib"}))
+        assert client.get("/health").json()["model_version"] == "v1.9"     # hot-reloaded
+
+        (tmp_path / "current.json").write_text(json.dumps({"file": "model_v1.10.joblib"}))
+        assert client.get("/health").json()["model_version"] == "v1.9"     # broken file: old model stays

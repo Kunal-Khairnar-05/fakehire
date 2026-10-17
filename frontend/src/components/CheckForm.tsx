@@ -35,6 +35,9 @@ export default function CheckForm({ onError }: Props) {
   // Kept in sessionStorage, so switching to "My checks" and back doesn't lose anything
   const [form, setForm] = useSessionState<PostingInput>("check-form", EMPTY);
   const [result, setResult] = useSessionState<Verdict | null>("check-result", null);
+  // The posting exactly as it was checked: the form may be edited afterwards, but a report
+  // must carry the original text (the API verifies its hash against the check).
+  const [checked, setChecked] = useSessionState<PostingInput | null>("checked-posting", null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -47,6 +50,7 @@ export default function CheckForm({ onError }: Props) {
     setBusy(true);
     try {
       setResult(await api.check(form));
+      setChecked(form);
     } catch (err) {
       setError(onError(err));
     } finally {
@@ -110,7 +114,7 @@ export default function CheckForm({ onError }: Props) {
 
       <div className="result-col stack-lg">
         {result ? (
-          <VerdictCard v={result} onError={onError} />
+          <VerdictCard v={result} posting={checked} onError={onError} />
         ) : (
           <div className="glass panel empty">
             <div className="dial placeholder" aria-hidden="true">

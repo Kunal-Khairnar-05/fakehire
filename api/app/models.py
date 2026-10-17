@@ -66,6 +66,9 @@ class Report(Base):
     reviewed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     company_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("companies.id", ondelete="SET NULL"))
+    # full text, for retraining (004). none_as_null: Python None -> SQL NULL. Without it,
+    # SQLAlchemy stores None as the JSON value null, which "IS NOT NULL" does NOT filter out.
+    posting: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

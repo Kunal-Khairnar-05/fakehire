@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import type { Verdict } from "../api";
+import type { PostingInput, Verdict } from "../api";
 import ReportScam from "./ReportScam";
 
 // Same bands as ml/fakehire_ml/scoring.py: 0-39 Safe, 40-69 Suspicious, 70-100 Likely scam
@@ -14,9 +14,9 @@ const ADVICE: Record<Verdict["verdict"], string> = {
   Safe: "No common scam patterns found. Still verify the company before sharing documents.",
 };
 
-type Props = { v: Verdict; onError: (err: unknown) => string };
+type Props = { v: Verdict; posting: PostingInput | null; onError: (err: unknown) => string };
 
-export default function VerdictCard({ v, onError }: Props) {
+export default function VerdictCard({ v, posting, onError }: Props) {
   const band = bandClass(v.verdict);
 
   return (
@@ -54,7 +54,7 @@ export default function VerdictCard({ v, onError }: Props) {
         <span className="tag">{v.took_ms} ms</span>
       </div>
 
-      <ReportScam checkId={v.id} onError={onError} />
+      <ReportScam checkId={v.id} posting={posting} onError={onError} />
     </section>
   );
 }

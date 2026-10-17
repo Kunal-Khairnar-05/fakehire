@@ -16,6 +16,10 @@ data/raw/
 data/processed/
 *.pkl
 *.joblib
+# Which model THIS machine serves (written by retrain.py). It names a .joblib file that
+# isn't in git, so committing it would break fresh clones and CI.
+ml/models/current.json
+ml/models/*.tmp
 
 # Node
 node_modules/
