@@ -55,7 +55,7 @@ def engine():
 def db(engine):
     """Direct database access for tests that inspect what was stored."""
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE checks, users RESTART IDENTITY CASCADE"))
+        conn.execute(text("TRUNCATE checks, users, companies RESTART IDENTITY CASCADE"))
     return engine
 
 

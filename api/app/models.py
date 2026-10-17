@@ -5,8 +5,20 @@ describe it so SQLAlchemy can read and write rows. We never call create_all().
 """
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Identity, SmallInteger, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Computed,
+    DateTime,
+    ForeignKey,
+    Identity,
+    Integer,
+    SmallInteger,
+    String,
+    Text,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .db import Base
@@ -53,4 +65,20 @@ class Report(Base):
     status: Mapped[str] = mapped_column(Text, server_default="pending")
     reviewed_by: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    company_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("companies.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Company(Base):
+    """A company with at least one VERIFIED scam report. Schema: db/migrations/003_companies.sql"""
+    __tablename__ = "companies"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+    name_key: Mapped[str] = mapped_column(Text, unique=True)
+    verified_reports: Mapped[int] = mapped_column(Integer, server_default="0")
+    last_reported_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Filled by Postgres (Computed = never written by us); deferred = not loaded unless a query uses it.
+    # Queries must use THIS column, because the GIN index is on it.
+    search: Mapped[str] = mapped_column(TSVECTOR, Computed("to_tsvector('simple', name)", persisted=True),
+                                        deferred=True)

@@ -132,3 +132,24 @@ class QueueOut(BaseModel):
 
 class ReviewIn(BaseModel):
     status: Literal["verified", "rejected"]
+
+
+# ---------- companies (Phase 2) ----------
+
+class CompanyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    verified_reports: int          # all time
+    last_reported_at: datetime | None
+
+
+class TrendingItem(CompanyOut):
+    this_week: int | None          # None when Redis was unavailable
+
+
+class TrendingOut(BaseModel):
+    items: list[TrendingItem]
+    # "live" = this week's Redis leaderboard; "fallback" = Redis down, all-time counts from Postgres
+    source: Literal["live", "fallback"]

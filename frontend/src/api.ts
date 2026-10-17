@@ -51,6 +51,11 @@ export type QueueItem = Report & {
 
 export type Queue = { items: QueueItem[]; next_after: string | null };
 
+export type Company = { id: number; name: string; verified_reports: number; last_reported_at: string | null };
+
+// source "live" = this week's Redis leaderboard; "fallback" = Redis down, all-time counts
+export type Trending = { items: (Company & { this_week: number | null })[]; source: "live" | "fallback" };
+
 export type PostingInput = {
   title: string;
   description: string;
@@ -167,4 +172,10 @@ export const api = {
 
   review: (id: number, status: "verified" | "rejected") =>
     request<Report>(`/api/v1/reports/${id}`, json({ status }, "PATCH")),
+
+  // Public: no login needed
+  trending: () => request<Trending>("/api/v1/trending?limit=5"),
+
+  searchCompanies: (q: string) =>
+    request<Company[]>(`/api/v1/companies/search?${new URLSearchParams({ q, limit: "5" })}`),
 };

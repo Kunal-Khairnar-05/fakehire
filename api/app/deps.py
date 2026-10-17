@@ -19,8 +19,10 @@ from .repositories.user_repo import UserRepository
 from .services.auth_service import AuthService
 from .services.cache import VerdictCache
 from .services.check_service import CheckService
+from .services.company_service import CompanyService
 from .services.rate_limiter import RateLimiter
 from .services.report_service import ReportService
+from .services.trending import TrendingBoard
 
 # Reads "Authorization: Bearer <token>" from the request. tokenUrl tells Swagger where to log in.
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -84,8 +86,14 @@ def enforce_rate_limit(claims: dict = Depends(get_token_claims),
                             headers={"Retry-After": str(wait)})
 
 
-def get_report_service(session: Session = Depends(get_session)) -> ReportService:
-    return ReportService(session)
+def get_report_service(session: Session = Depends(get_session),
+                       redis: Redis = Depends(get_redis)) -> ReportService:
+    return ReportService(session, TrendingBoard(redis))
+
+
+def get_company_service(session: Session = Depends(get_session),
+                        redis: Redis = Depends(get_redis)) -> CompanyService:
+    return CompanyService(session, TrendingBoard(redis))
 
 
 def require_role(*allowed: str):

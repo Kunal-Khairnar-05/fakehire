@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 
 import { api, type PostingInput, type Verdict } from "../api";
 import { useSessionState } from "../useSessionState";
+import ScamCompanies from "./ScamCompanies";
 import VerdictCard from "./VerdictCard";
 
 type Props = { onError: (err: unknown) => string };
@@ -107,7 +108,7 @@ export default function CheckForm({ onError }: Props) {
         </div>
       </form>
 
-      <div className="result-col">
+      <div className="result-col stack-lg">
         {result ? (
           <VerdictCard v={result} onError={onError} />
         ) : (
@@ -122,6 +123,7 @@ export default function CheckForm({ onError }: Props) {
             </p>
           </div>
         )}
+        <ScamCompanies />
       </div>
     </div>
   );

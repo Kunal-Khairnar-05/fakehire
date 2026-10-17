@@ -15,7 +15,7 @@ from .clients.ml_client import MlClient
 from .core.config import settings
 from .db import get_session
 from .deps import get_redis
-from .routes import auth, checks, reports
+from .routes import auth, checks, companies, reports
 
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ app = FastAPI(title="FakeHire API", version="1.0", lifespan=lifespan)
 app.include_router(auth.router)
 app.include_router(checks.router)
 app.include_router(reports.router)
+app.include_router(companies.router)
 
 
 @app.middleware("http")
