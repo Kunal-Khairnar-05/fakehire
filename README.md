@@ -15,6 +15,10 @@ browser :80 ──► Nginx ──► /     React app (static, built into the Ng
                                                      └──► ml-service (rules + TF-IDF/LR)
 ```
 
+<img width="2663" height="1679" alt="FakeHire – System Design" src="https://github.com/user-attachments/assets/7a5224aa-3a41-4112-bf47-29ee6559fa21" />
+
+
+
 ## Highlights
 
 | Area | What it does | Result |
