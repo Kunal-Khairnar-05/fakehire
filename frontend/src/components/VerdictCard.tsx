@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
 
 import type { PostingInput, Verdict } from "../api";
 import ReportScam from "./ReportScam";
@@ -14,9 +14,14 @@ const ADVICE: Record<Verdict["verdict"], string> = {
   Safe: "No common scam patterns found. Still verify the company before sharing documents.",
 };
 
-type Props = { v: Verdict; posting: PostingInput | null; onError: (err: unknown) => string };
+type Props = {
+  v: Verdict;
+  posting: PostingInput | null;
+  onError: (err: unknown) => string;
+  onNewCheck: () => void;   // clears the form, this result and the web check
+};
 
-export default function VerdictCard({ v, posting, onError }: Props) {
+export default function VerdictCard({ v, posting, onError, onNewCheck }: Props) {
   const band = bandClass(v.verdict);
 
   return (
@@ -29,7 +34,12 @@ export default function VerdictCard({ v, posting, onError }: Props) {
             <span className="score-max">/ 100</span>
           </div>
         </div>
-        <span className={`pill ${band}`}>{v.verdict}</span>
+        <div className="verdict-actions">
+          <span className={`pill ${band}`}>{v.verdict}</span>
+          <button className="btn btn-secondary btn-sm" onClick={onNewCheck}>
+            <Plus size={13} aria-hidden="true" /> New check
+          </button>
+        </div>
       </div>
 
       {/* Bands marked at 40 and 70 */}

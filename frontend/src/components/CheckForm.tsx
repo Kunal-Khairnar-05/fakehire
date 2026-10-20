@@ -1,3 +1,4 @@
+import { RotateCcw } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import { api, type PostingInput, type Verdict } from "../api";
@@ -63,8 +64,12 @@ export default function CheckForm({ onError }: Props) {
   function load(sample: PostingInput) {
     setForm(sample);
     setResult(null);
+    setChecked(null);
     setError(null);
   }
+
+  const isEmpty = Object.values(form).every((v) => !v);
+  const clear = () => load(EMPTY);
 
   return (
     <div className="check-layout">
@@ -77,6 +82,10 @@ export default function CheckForm({ onError }: Props) {
             </button>
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => load(SAMPLE_REAL)}>
               Sample real
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={clear}
+                    disabled={busy || (isEmpty && !result)} title="Clear the form and the result">
+              <RotateCcw size={13} aria-hidden="true" /> Clear
             </button>
           </div>
         </div>
@@ -110,8 +119,7 @@ export default function CheckForm({ onError }: Props) {
         {error && <p className="error" role="alert">{error}</p>}
 
         <div className="actions">
-          <button type="button" className="btn btn-secondary" onClick={() => load(EMPTY)}
-                  disabled={busy || Object.values(form).every((v) => !v)}>
+          <button type="button" className="btn btn-secondary" onClick={clear} disabled={busy || (isEmpty && !result)}>
             Clear
           </button>
           <button className="btn btn-primary" disabled={busy || form.description.trim().length < 20}>
@@ -123,7 +131,7 @@ export default function CheckForm({ onError }: Props) {
       <div className="stack-lg">
         {result ? (
           <>
-            <VerdictCard v={result} posting={checked} onError={onError} />
+            <VerdictCard v={result} posting={checked} onError={onError} onNewCheck={clear} />
             {checked && <WebEvidence checkId={result.id} posting={checked} onError={onError} />}
           </>
         ) : (
